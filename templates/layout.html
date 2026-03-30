@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Knowledge Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #09090b;
+      --s1: #111115;
+      --s2: #18181e;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --g: #c8f542;
+      --g2: #a8d932;
+      --purple: #9b7cff;
+      --text: #f4f4f5;
+      --muted: #71717a;
+      --dim: #52525b;
+      --sw: 260px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { display: flex; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--sw); background: var(--s1); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100vh; flex-shrink: 0; }
+    .sb-top { padding: 22px 18px 18px; border-bottom: 1px solid var(--border); }
+    .sb-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; }
+    .sb-gem { width: 30px; height: 30px; border-radius: 8px; background: var(--g); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .sb-name { font-weight: 800; font-size: 14px; color: var(--text); }
+    .sb-sub { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--g); margin-left: 40px; letter-spacing: 0.06em; }
+    .sb-nav { flex: 1; overflow-y: auto; padding: 10px 0; }
+    .sb-nav::-webkit-scrollbar { width: 3px; }
+    .sb-nav::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 99px; }
+    .sb-section { margin-bottom: 2px; }
+    .sb-heading { padding: 8px 18px 4px; font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--dim); display: flex; align-items: center; gap: 8px; }
+    .sb-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .sb-link { display: flex; align-items: center; gap: 8px; padding: 7px 18px; font-size: 13px; font-weight: 400; color: #a1a1aa; text-decoration: none; border-left: 2px solid transparent; transition: all 0.15s ease; }
+    .sb-link::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--dim); flex-shrink: 0; transition: background 0.15s ease; }
+    .sb-link:hover { color: var(--text); background: rgba(255,255,255,0.04); border-left-color: var(--g); }
+    .sb-link:hover::before { background: var(--g); }
+    .sb-footer { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--g); flex-shrink: 0; animation: blip 2.2s ease-in-out infinite; }
+    @keyframes blip { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.3; transform:scale(0.7); } }
+    .sb-footer span { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+
+    /* MAIN */
+    .main { flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .main::-webkit-scrollbar { width: 4px; }
+    .main::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 99px; }
+
+    /* HERO */
+    .hero { position: relative; overflow: hidden; padding: 56px 48px 48px; background: var(--s1); border-bottom: 1px solid var(--border); min-height: 320px; display: flex; flex-direction: column; justify-content: flex-end; }
+    .hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(200,245,66,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(200,245,66,0.04) 1px, transparent 1px); background-size: 48px 48px; animation: gridMove 22s linear infinite; }
+    @keyframes gridMove { 0% { background-position: 0 0; } 100% { background-position: 48px 48px; } }
+    .hero-glow { position: absolute; top: -80px; right: -100px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(200,245,66,0.09) 0%, transparent 65%); pointer-events: none; }
+    .hero-glow2 { position: absolute; bottom: -100px; left: 80px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(155,124,255,0.07) 0%, transparent 65%); pointer-events: none; }
+    .hero-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--g); margin-bottom: 16px; position: relative; display: flex; align-items: center; gap: 10px; }
+    .hero-eyebrow::before { content: ''; width: 20px; height: 1px; background: var(--g); }
+    .hero-headline { position: relative; font-family: 'DM Serif Display', serif; font-size: clamp(38px, 5vw, 62px); font-weight: 400; line-height: 1.05; letter-spacing: -0.02em; color: var(--text); margin-bottom: 24px; }
+    .hero-headline em { font-style: italic; color: var(--g); }
+    .hero-quote { position: relative; max-width: 480px; border-left: 2px solid var(--g); padding: 14px 20px; background: rgba(200,245,66,0.05); border-radius: 0 8px 8px 0; }
+    .hero-quote p { font-family: 'DM Serif Display', serif; font-style: italic; font-size: 17px; line-height: 1.55; color: #d4d4d8; }
+    .hero-quote .q-attr { margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--g2); letter-spacing: 0.08em; }
+
+    /* MOTTO TICKER */
+    .motto-bar { background: var(--g); padding: 9px 0; overflow: hidden; flex-shrink: 0; }
+    .motto-track { display: flex; gap: 0; animation: scroll 30s linear infinite; white-space: nowrap; }
+    @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+    .motto-item { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #1a1a1a; flex-shrink: 0; padding: 0 18px; }
+    .motto-sep { color: rgba(0,0,0,0.3); flex-shrink: 0; font-size: 11px; }
+
+    /* STATS */
+    .stats-row { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .stat { flex: 1; padding: 20px 26px; border-right: 1px solid var(--border); transition: background 0.2s; }
+    .stat:last-child { border-right: none; }
+    .stat:hover { background: rgba(255,255,255,0.02); }
+    .stat-n { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: var(--g); line-height: 1; }
+    .stat-n.fire { background: linear-gradient(135deg,#ff9a3c,#ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .stat-n.purple { color: var(--purple); }
+    .stat-l { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+    /* CONTENT AREA */
+    .section-pad { padding: 32px 48px 48px; }
+    .s-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 12px; }
+    .s-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* GOAL CARDS */
+    .goals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 36px; }
+    .goal-card { background: var(--s1); border: 1px solid var(--border); border-radius: 14px; padding: 18px 18px 16px; transition: all 0.2s ease; position: relative; overflow: hidden; }
+    .goal-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; border-radius: 0 0 14px 14px; opacity: 0; transition: opacity 0.2s; }
+    .goal-card.lime::after   { background: var(--g); }
+    .goal-card.purple::after { background: var(--purple); }
+    .goal-card.orange::after { background: #ff9a3c; }
+    .goal-card.cyan::after   { background: #38bdf8; }
+    .goal-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+    .goal-card:hover::after { opacity: 1; }
+    .goal-icon { font-size: 20px; margin-bottom: 10px; display: block; }
+    .goal-title { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 3px; }
+    .goal-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+    .goal-progress { margin-top: 12px; }
+    .prog-bar-bg { height: 3px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+    .prog-bar { height: 100%; border-radius: 99px; }
+    .prog-num { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--dim); margin-top: 4px; text-align: right; }
+
+    /* RESOURCE CARDS */
+    .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+    .res-card { display: block; background: var(--s1); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; text-decoration: none; transition: all 0.18s ease; }
+    .res-card:hover { border-color: var(--border2); background: var(--s2); transform: translateY(-2px); }
+    .res-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.10em; text-transform: uppercase; margin-bottom: 8px; }
+    .res-title { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 10px; }
+    .res-arrow { font-size: 14px; color: var(--muted); transition: all 0.18s ease; display: inline-block; }
+    .res-card:hover .res-arrow { transform: translateX(5px); color: var(--g); }
+    .c-docker .res-tag  { color: #2496ED; }
+    .c-k8s .res-tag     { color: #326CE5; }
+    .c-python .res-tag  { color: #FFD43B; }
+
+    /* Animations */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    .hero          { animation: fadeUp 0.5s ease both; }
+    .stats-row     { animation: fadeUp 0.5s 0.10s ease both; }
+    .section-pad   { animation: fadeUp 0.5s 0.20s ease both; }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-top">
+    <div class="sb-brand">
+      <div class="sb-gem">📚</div>
+      <div class="sb-name">Knowledge Hub</div>
+    </div>
+    <div class="sb-sub">~/personal/reference</div>
+  </div>
+  <nav class="sb-nav">
+    {% for section, subs in sections.items() %}
+    <div class="sb-section">
+      <div class="sb-heading">{{ section }}</div>
+      {% for sub, file in subs.items() %}
+      <a href="/view/{{ section }}/{{ sub }}" class="sb-link">{{ sub }}</a>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </nav>
+  <div class="sb-footer">
+    <div class="pulse"></div>
+    <span>local · port 5000</span>
+  </div>
+</aside>
+
+<main class="main">
+
+  <div class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-glow2"></div>
+    <div class="hero-eyebrow" id="today-date">Loading…</div>
+    <h1 class="hero-headline">Build. Learn.<br/><em>Become unstoppable.</em></h1>
+    <div class="hero-quote">
+      <p id="quote-text">"The expert in anything was once a beginner."</p>
+      <div class="q-attr" id="quote-attr">— Helen Hayes</div>
+    </div>
+  </div>
+
+  <div class="motto-bar">
+    <div class="motto-track">
+      <span class="motto-item">Ship it</span><span class="motto-sep">✦</span>
+      <span class="motto-item">One more chapter</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Stay curious</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Build in public</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Compound daily</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Master the basics</span><span class="motto-sep">✦</span>
+      <span class="motto-item">SRE mode on</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Think in systems</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Ship it</span><span class="motto-sep">✦</span>
+      <span class="motto-item">One more chapter</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Stay curious</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Build in public</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Compound daily</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Master the basics</span><span class="motto-sep">✦</span>
+      <span class="motto-item">SRE mode on</span><span class="motto-sep">✦</span>
+      <span class="motto-item">Think in systems</span><span class="motto-sep">✦</span>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    {% set total = namespace(count=0) %}
+    {% for section, subs in sections.items() %}{% set total.count = total.count + subs|length %}{% endfor %}
+    <div class="stat">
+      <div class="stat-n">{{ sections|length }}</div>
+      <div class="stat-l">Domains</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">{{ total.count }}</div>
+      <div class="stat-l">Resources</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n fire" id="streak-count">—</div>
+      <div class="stat-l">🔥 Day streak</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n purple" id="session-count">1</div>
+      <div class="stat-l">Sessions today</div>
+    </div>
+  </div>
+
+  <div class="section-pad">
+
+    <div class="s-label">Dream goals</div>
+    <div class="goals-grid">
+      <div class="goal-card lime">
+        <span class="goal-icon">🐳</span>
+        <div class="goal-title">Docker Master</div>
+        <div class="goal-sub">Containers → production</div>
+        <div class="goal-progress">
+          <div class="prog-bar-bg"><div class="prog-bar" style="width:65%;background:var(--g);"></div></div>
+          <div class="prog-num">65%</div>
+        </div>
+      </div>
+      <div class="goal-card cyan">
+        <span class="goal-icon">☸️</span>
+        <div class="goal-title">Kubernetes SRE</div>
+        <div class="goal-sub">Orchestrate at scale</div>
+        <div class="goal-progress">
+          <div class="prog-bar-bg"><div class="prog-bar" style="width:40%;background:#38bdf8;"></div></div>
+          <div class="prog-num">40%</div>
+        </div>
+      </div>
+      <div class="goal-card purple">
+        <span class="goal-icon">🐍</span>
+        <div class="goal-title">Python SRE Pro</div>
+        <div class="goal-sub">Automate everything</div>
+        <div class="goal-progress">
+          <div class="prog-bar-bg"><div class="prog-bar" style="width:50%;background:var(--purple);"></div></div>
+          <div class="prog-num">50%</div>
+        </div>
+      </div>
+      <div class="goal-card orange">
+        <span class="goal-icon">🚀</span>
+        <div class="goal-title">Land Dream Job</div>
+        <div class="goal-sub">SRE @ top tech co.</div>
+        <div class="goal-progress">
+          <div class="prog-bar-bg"><div class="prog-bar" style="width:25%;background:#ff9a3c;"></div></div>
+          <div class="prog-num">25%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="s-label">Jump back in</div>
+    <div class="resource-grid">
+      {% for section, subs in sections.items() %}
+        {% set sec_class = 'c-docker' if section == 'Docker' else ('c-k8s' if section == 'Kubernetes' else 'c-python') %}
+        {% for sub, file in subs.items() %}
+        <a href="/view/{{ section }}/{{ sub }}" class="res-card {{ sec_class }}">
+          <div class="res-tag">{{ section }}</div>
+          <div class="res-title">{{ sub }}</div>
+          <div class="res-arrow">→</div>
+        </a>
+        {% endfor %}
+      {% endfor %}
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const d = new Date();
+  document.getElementById('today-date').textContent = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  const quotes = [
+    {text:"The expert in anything was once a beginner.",attr:"— Helen Hayes"},
+    {text:"Do it scared. Do it tired. Just do it.",attr:"— Unknown"},
+    {text:"An investment in knowledge pays the best interest.",attr:"— Benjamin Franklin"},
+    {text:"Every day is a chance to be better than yesterday.",attr:"— Unknown"},
+    {text:"Discipline is choosing what you want most over what you want now.",attr:"— Abraham Lincoln"},
+    {text:"Every line of code you write today is a brick in the career you're building.",attr:"— SRE wisdom"},
+    {text:"You don't have to be great to start, but you have to start to be great.",attr:"— Zig Ziglar"},
+    {text:"Small progress is still progress. Keep going.",attr:"— Unknown"},
+  ];
+  const q = quotes[Math.floor(Math.random() * quotes.length)];
+  document.getElementById('quote-text').textContent = '\u201c' + q.text + '\u201d';
+  document.getElementById('quote-attr').textContent = q.attr;
+
+  const today = d.toDateString();
+  const yesterday = new Date(d); yesterday.setDate(d.getDate()-1);
+  let stored = {};
+  try { stored = JSON.parse(localStorage.getItem('kb_streak') || '{}'); } catch(e){}
+  let streak = 1;
+  if (stored.date === today) { streak = stored.streak; }
+  else if (stored.date === yesterday.toDateString()) { streak = stored.streak + 1; }
+  try { localStorage.setItem('kb_streak', JSON.stringify({date:today, streak})); } catch(e){}
+  document.getElementById('streak-count').textContent = streak;
+
+  let sessions = 1;
+  try {
+    sessions = parseInt(sessionStorage.getItem('kb_sessions') || '0') + 1;
+    sessionStorage.setItem('kb_sessions', sessions);
+  } catch(e){}
+  document.getElementById('session-count').textContent = sessions;
+</script>
+</body>
+</html>

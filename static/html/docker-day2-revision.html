@@ -1,0 +1,2192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 2 — Docker Images, Layers & Dockerfiles</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #07080c;
+  --bg2:     #0d0f16;
+  --bg3:     #11141e;
+  --card:    #0e1019;
+  --border:  #1b2235;
+  --border2: #242b3d;
+  --orange:  #ff6b1a;
+  --orange3: #ff9a5c;
+  --amber:   #ffb830;
+  --green:   #39d98a;
+  --green2:  #1fa65c;
+  --red:     #ff4757;
+  --blue:    #4a9eff;
+  --purple:  #9b7ff4;
+  --teal:    #00e5c8;
+  --text:    #c4cbe0;
+  --text2:   #6b748a;
+  --text3:   #3a4055;
+  --white:   #f0f3ff;
+  --mono:    'IBM Plex Mono', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
+  --display: 'Bebas Neue', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:radial-gradient(circle at 20% 15%,rgba(255,107,26,0.04) 0%,transparent 50%),
+    radial-gradient(circle at 80% 85%,rgba(74,158,255,0.03) 0%,transparent 50%),
+    linear-gradient(rgba(255,107,26,0.012) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,107,26,0.012) 1px,transparent 1px);
+  background-size:100% 100%,100% 100%,52px 52px,52px 52px;
+  pointer-events:none;z-index:0;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.page{position:relative;z-index:1;}
+
+/* NAV */
+.topnav{position:sticky;top:0;z-index:100;background:rgba(7,8,12,0.93);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;height:50px;overflow-x:auto;gap:0;}
+.nav-brand{font-family:var(--display);font-size:17px;letter-spacing:0.08em;color:var(--orange);margin-right:28px;white-space:nowrap;flex-shrink:0;}
+.nav-links{display:flex;gap:2px;flex-shrink:0;}
+.nav-link{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text2);padding:5px 11px;text-decoration:none;transition:all 0.2s;white-space:nowrap;border:1px solid transparent;}
+.nav-link:hover{color:var(--orange);border-color:rgba(255,107,26,0.3);background:rgba(255,107,26,0.04);}
+
+/* HERO */
+.hero{padding:64px 48px 48px;max-width:1160px;margin:0 auto;animation:fadeUp 0.7s ease forwards;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+.hero-eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.hero-tag{font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--teal);border:1px solid rgba(0,229,200,0.4);padding:4px 14px;background:rgba(0,229,200,0.06);}
+.hero-date{font-size:10px;letter-spacing:0.2em;color:var(--text3);text-transform:uppercase;}
+h1{font-family:var(--display);font-size:clamp(48px,7vw,90px);letter-spacing:0.04em;color:var(--white);line-height:0.95;margin-bottom:8px;}
+h1 .accent{color:var(--teal);}
+.hero-sub{font-family:var(--sans);font-size:14px;color:var(--text2);letter-spacing:0.04em;margin-top:16px;max-width:580px;line-height:1.75;}
+.hero-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px;}
+.chip{font-size:10px;letter-spacing:0.13em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--border2);color:var(--text2);}
+.chip.teal{border-color:rgba(0,229,200,0.4);color:var(--teal);background:rgba(0,229,200,0.05);}
+.chip.orange{border-color:rgba(255,107,26,0.4);color:var(--orange3);background:rgba(255,107,26,0.05);}
+.chip.green{border-color:rgba(57,217,138,0.4);color:var(--green);background:rgba(57,217,138,0.05);}
+.chip.blue{border-color:rgba(74,158,255,0.4);color:var(--blue);background:rgba(74,158,255,0.05);}
+.chip.purple{border-color:rgba(155,127,244,0.4);color:var(--purple);background:rgba(155,127,244,0.05);}
+
+/* DIVIDER */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),var(--teal),var(--border2),transparent);margin:0 48px;opacity:0.5;}
+
+/* SECTIONS */
+.sections{max-width:1160px;margin:0 auto;padding:0 28px 80px;}
+.section{padding:52px 0 0;opacity:0;transform:translateY(20px);transition:opacity 0.5s ease,transform 0.5s ease;}
+.section.visible{opacity:1;transform:translateY(0);}
+.section-header{display:flex;align-items:center;gap:14px;margin-bottom:28px;}
+.section-num{font-family:var(--display);font-size:12px;letter-spacing:0.2em;color:var(--teal);opacity:0.65;}
+.section-title{font-family:var(--display);font-size:clamp(20px,3vw,30px);letter-spacing:0.06em;color:var(--white);}
+.section-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border2),transparent);}
+
+/* COMPARE GRID */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:680px){.compare-grid{grid-template-columns:1fr;}}
+.compare-card{background:var(--card);border:1px solid var(--border);padding:24px;position:relative;overflow:hidden;transition:border-color 0.2s;}
+.compare-card.teal{border-top:2px solid var(--teal);}
+.compare-card.orange{border-top:2px solid var(--orange);}
+.compare-card.green{border-top:2px solid var(--green);}
+.compare-card.red{border-top:2px solid var(--red);}
+.compare-card.blue{border-top:2px solid var(--blue);}
+.compare-card.amber{border-top:2px solid var(--amber);}
+.compare-card.purple{border-top:2px solid var(--purple);}
+.card-label{font-size:9px;letter-spacing:0.28em;text-transform:uppercase;margin-bottom:12px;}
+.card-label.teal{color:var(--teal);}
+.card-label.orange{color:var(--orange3);}
+.card-label.green{color:var(--green);}
+.card-label.red{color:var(--red);}
+.card-label.blue{color:var(--blue);}
+.card-label.amber{color:var(--amber);}
+.card-label.purple{color:var(--purple);}
+.card-title{font-family:var(--display);font-size:24px;letter-spacing:0.05em;color:var(--white);margin-bottom:14px;}
+
+/* BULLETS */
+.bullet-list{list-style:none;display:flex;flex-direction:column;gap:7px;}
+.bullet-list li{font-size:12px;color:var(--text);line-height:1.5;display:flex;align-items:flex-start;gap:9px;}
+.bullet-list li::before{content:'▸';color:var(--orange);flex-shrink:0;margin-top:1px;font-size:10px;}
+.bullet-list.blue-dot li::before{color:var(--blue);}
+.bullet-list.green-dot li::before{color:var(--green);}
+.bullet-list.red-dot li::before{color:var(--red);}
+.bullet-list.teal-dot li::before{color:var(--teal);}
+.bullet-list.amber-dot li::before{color:var(--amber);}
+
+/* CODE */
+.code-label{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--text3);margin-bottom:9px;}
+.code-wrap{background:#090b12;border:1px solid var(--border);border-left:3px solid var(--orange);padding:18px 22px;font-size:12px;line-height:1.95;overflow-x:auto;position:relative;}
+.code-wrap .comment{color:var(--text3);}
+.code-wrap .cmd{color:var(--orange3);}
+.code-wrap .flag{color:var(--blue);}
+.code-wrap .val{color:var(--green);}
+.code-wrap .out{color:var(--text2);}
+.code-wrap .tag{color:var(--purple);}
+.code-wrap .kw{color:var(--teal);}
+.code-wrap .str{color:var(--amber);}
+.code-wrap.teal-border{border-left-color:var(--teal);}
+.code-wrap.green-border{border-left-color:var(--green);}
+.code-wrap.red-border{border-left-color:var(--red);}
+.code-wrap.blue-border{border-left-color:var(--blue);}
+.code-wrap.amber-border{border-left-color:var(--amber);}
+.code-wrap.purple-border{border-left-color:var(--purple);}
+
+/* TABLE */
+.table-wrap{background:var(--card);border:1px solid var(--border);overflow:hidden;}
+.comp-table{width:100%;border-collapse:collapse;font-size:12px;}
+.comp-table th{text-align:left;padding:10px 14px;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);font-weight:600;}
+.comp-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text);line-height:1.5;vertical-align:top;}
+.comp-table tr:last-child td{border-bottom:none;}
+.comp-table tr:hover td{background:rgba(255,255,255,0.015);}
+.comp-table td:first-child{color:var(--text2);font-weight:500;}
+.comp-table td.orange{color:var(--orange3);}
+.comp-table td.blue{color:var(--blue);}
+.comp-table td.green{color:var(--green);}
+.comp-table td.red{color:var(--red);}
+.comp-table td.amber{color:var(--amber);}
+.comp-table td.teal{color:var(--teal);}
+.comp-table td.purple{color:var(--purple);}
+
+/* INSIGHT */
+.insight{display:flex;gap:14px;align-items:flex-start;background:rgba(255,107,26,0.055);border:1px solid rgba(255,107,26,0.22);border-left:3px solid var(--orange);padding:14px 18px;margin-top:14px;}
+.insight.sre{background:rgba(255,71,87,0.05);border-color:rgba(255,71,87,0.22);border-left-color:var(--red);}
+.insight.green{background:rgba(57,217,138,0.05);border-color:rgba(57,217,138,0.22);border-left-color:var(--green);}
+.insight.blue{background:rgba(74,158,255,0.05);border-color:rgba(74,158,255,0.22);border-left-color:var(--blue);}
+.insight.teal{background:rgba(0,229,200,0.05);border-color:rgba(0,229,200,0.22);border-left-color:var(--teal);}
+.insight.purple{background:rgba(155,127,244,0.05);border-color:rgba(155,127,244,0.22);border-left-color:var(--purple);}
+.insight.amber{background:rgba(255,184,48,0.05);border-color:rgba(255,184,48,0.22);border-left-color:var(--amber);}
+.insight-icon{font-size:17px;flex-shrink:0;margin-top:1px;}
+.insight-body{font-size:12px;color:var(--text2);line-height:1.75;}
+.insight-body strong{color:var(--orange3);}
+.insight.sre .insight-body strong{color:var(--red);}
+.insight.green .insight-body strong{color:var(--green);}
+.insight.blue .insight-body strong{color:var(--blue);}
+.insight.teal .insight-body strong{color:var(--teal);}
+.insight.purple .insight-body strong{color:var(--purple);}
+.insight.amber .insight-body strong{color:var(--amber);}
+
+/* INTERVIEW BADGE */
+.interview-badge{display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:0.12em;padding:5px 12px;margin-top:11px;border:1px solid rgba(155,127,244,0.4);color:var(--purple);background:rgba(155,127,244,0.06);}
+
+/* LAYER BAR */
+.layer-bar{display:flex;flex-direction:column;gap:4px;}
+.layer-row{display:flex;align-items:center;gap:10px;font-size:11px;}
+.layer-fill{height:26px;display:flex;align-items:center;padding:0 10px;font-size:10px;letter-spacing:0.08em;white-space:nowrap;position:relative;min-width:40px;}
+.layer-fill.l-huge{background:rgba(255,71,87,0.18);border:1px solid rgba(255,71,87,0.4);color:var(--red);}
+.layer-fill.l-big{background:rgba(255,107,26,0.15);border:1px solid rgba(255,107,26,0.4);color:var(--orange3);}
+.layer-fill.l-med{background:rgba(255,184,48,0.12);border:1px solid rgba(255,184,48,0.35);color:var(--amber);}
+.layer-fill.l-small{background:rgba(57,217,138,0.1);border:1px solid rgba(57,217,138,0.35);color:var(--green);}
+.layer-fill.l-zero{background:rgba(59,66,82,0.3);border:1px solid var(--border);color:var(--text3);}
+.layer-cmd{color:var(--text2);flex:1;}
+
+/* IMAGE SIZE VISUAL */
+.size-bar-wrap{display:flex;flex-direction:column;gap:10px;padding:20px;}
+.size-row{display:flex;align-items:center;gap:12px;}
+.size-label{width:100px;font-size:11px;color:var(--text2);flex-shrink:0;}
+.size-track{flex:1;height:28px;background:var(--bg3);position:relative;}
+.size-fill{height:100%;display:flex;align-items:center;padding-left:10px;font-size:10px;font-weight:600;letter-spacing:0.1em;}
+.size-fill.alpine{width:7%;background:rgba(57,217,138,0.5);border:1px solid var(--green);color:var(--green);}
+.size-fill.ubuntu{width:70%;background:rgba(255,184,48,0.4);border:1px solid var(--amber);color:var(--amber);}
+.size-fill.node18{width:127%;max-width:100%;background:rgba(255,107,26,0.35);border:1px solid var(--orange);color:var(--orange3);}
+.size-fill.nodefull{width:100%;background:rgba(255,71,87,0.35);border:1px solid var(--red);color:var(--red);}
+.size-num{width:60px;font-size:11px;text-align:right;flex-shrink:0;}
+
+/* CACHE FLOW */
+.cache-step{display:flex;align-items:stretch;gap:0;margin-bottom:4px;}
+.cache-num{width:28px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3);flex-shrink:0;}
+.cache-block{flex:1;padding:9px 14px;font-size:11px;border:1px solid var(--border);background:var(--bg2);}
+.cache-block.cached{background:rgba(57,217,138,0.07);border-color:rgba(57,217,138,0.3);color:var(--green);}
+.cache-block.rebuild{background:rgba(255,71,87,0.07);border-color:rgba(255,71,87,0.3);color:var(--red);}
+.cache-badge{font-size:9px;letter-spacing:0.12em;text-transform:uppercase;margin-left:8px;opacity:0.8;}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:0;}
+.step{display:flex;gap:16px;align-items:flex-start;position:relative;padding-bottom:0;}
+.step:not(:last-child)::before{content:'';position:absolute;left:14px;top:30px;bottom:0;width:1px;background:var(--border);}
+.step-num{width:28px;height:28px;flex-shrink:0;border:1px solid var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--teal);position:relative;z-index:1;}
+.step-body{padding:4px 0 22px;}
+.step-title{font-size:12px;font-weight:600;color:var(--white);margin-bottom:3px;}
+.step-desc{font-size:11px;color:var(--text2);line-height:1.65;}
+.step-code{margin-top:7px;background:var(--bg);border:1px solid var(--border);padding:7px 12px;font-size:11px;color:var(--green);display:inline-block;}
+
+/* MULTI-STAGE VISUAL */
+.ms-visual{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:center;}
+.ms-stage{border:1px solid var(--border);padding:20px;}
+.ms-stage.build{border-color:rgba(255,107,26,0.4);background:rgba(255,107,26,0.04);}
+.ms-stage.final{border-color:rgba(57,217,138,0.4);background:rgba(57,217,138,0.04);}
+.ms-arrow{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 14px;}
+.ms-arrow-line{font-size:22px;color:var(--teal);}
+.ms-arrow-label{font-size:9px;color:var(--text3);letter-spacing:0.1em;text-align:center;}
+.ms-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border2);font-size:11px;}
+.ms-item:last-child{border-bottom:none;}
+.ms-icon{font-size:13px;width:18px;text-align:center;}
+
+/* APP BUILD VISUAL */
+.app-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:760px){.app-cols{grid-template-columns:1fr;}}
+.app-card{background:var(--card);border:1px solid var(--border);overflow:hidden;}
+.app-card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.app-card-body{padding:18px;}
+.app-lang-badge{font-family:var(--display);font-size:20px;letter-spacing:0.05em;}
+
+/* DEBUG SCENARIO */
+.scenario{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);padding:22px;margin-bottom:14px;}
+.scenario-title{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--red);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.scenario-title::before{content:'⚠';font-size:11px;}
+.scenario.amber{border-left-color:var(--amber);}
+.scenario.amber .scenario-title{color:var(--amber);}
+.scenario.green{border-left-color:var(--green);}
+.scenario.green .scenario-title{color:var(--green);}
+
+/* TAKEAWAY GRID */
+.takeaway-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.takeaway{background:var(--card);border:1px solid var(--border);padding:22px;position:relative;overflow:hidden;}
+.takeaway::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),transparent);}
+.takeaway-icon{font-size:22px;margin-bottom:10px;display:block;}
+.takeaway-title{font-family:var(--display);font-size:16px;letter-spacing:0.05em;color:var(--white);margin-bottom:8px;}
+.takeaway-body{font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;}
+
+/* GAP UTILITY */
+.gap-12{margin-bottom:12px;}
+.gap-16{margin-bottom:16px;}
+.gap-20{margin-bottom:20px;}
+.gap-24{margin-bottom:24px;}
+
+@media(max-width:600px){
+  .hero{padding:36px 18px 28px;}
+  .sections{padding:0 14px 60px;}
+  .divider{margin:0 18px;}
+  .ms-visual{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- NAV -->
+<nav class="topnav">
+  <div class="nav-brand">🐳 DAY 02</div>
+  <div class="nav-links">
+    <a href="#s1" class="nav-link">Image Sizes</a>
+    <a href="#s2" class="nav-link">Layers</a>
+    <a href="#s3" class="nav-link">Caching</a>
+    <a href="#s4" class="nav-link">Multi-Stage</a>
+    <a href="#s5" class="nav-link">Dockerfile</a>
+    <a href="#s6" class="nav-link">Node App</a>
+    <a href="#s7" class="nav-link">Python App</a>
+    <a href="#s8" class="nav-link">Java App</a>
+    <a href="#s9" class="nav-link">Build vs Run</a>
+    <a href="#s11" class="nav-link">Inspect + RMI</a>
+    <a href="#s12" class="nav-link">Exec + Stats</a>
+    <a href="#s10" class="nav-link">Takeaways</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">
+    <div class="hero-tag">Day 2 of 10</div>
+    <div class="hero-date">Images · Layers · Dockerfiles · Multi-Stage</div>
+  </div>
+  <h1>IMAGES &<br><span class="accent">DOCKERFILE</span></h1>
+  <div class="hero-sub">
+    Layer caching · Multi-stage builds · Writing Dockerfiles for any app<br>
+    Node · Python · Java — hands-on, real debugging included.
+  </div>
+  <div class="hero-chips">
+    <span class="chip teal">Image Sizes</span>
+    <span class="chip orange">Layer Caching</span>
+    <span class="chip green">Multi-Stage</span>
+    <span class="chip blue">Node Dockerfile</span>
+    <span class="chip purple">Java Build</span>
+    <span class="chip">Python App</span>
+  </div>
+</div>
+<div class="divider"></div>
+<div class="sections">
+
+<!-- ═══════════════════════════════════ -->
+<!-- S1: IMAGE SIZE COMPARISON -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <span class="section-title">IMAGE SIZE COMPARISON LAB</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- Commands -->
+  <div class="compare-grid gap-24">
+    <div>
+      <div class="code-label">Commands you ran</div>
+      <div class="code-wrap">
+<span class="comment"># Pull images</span>
+<span class="cmd">docker pull</span> <span class="val">ubuntu</span>
+<span class="cmd">docker pull</span> <span class="val">alpine</span>
+<span class="cmd">docker pull</span> <span class="val">node:18-alpine</span>
+
+<span class="comment"># Compare sizes</span>
+<span class="cmd">docker images</span>
+<span class="out">REPOSITORY   TAG        SIZE</span>
+<span class="out" style="color:var(--red);">node         latest     1.13GB</span>
+<span class="out" style="color:var(--amber);">ubuntu       latest     78.1MB</span>
+<span class="out" style="color:var(--green);">alpine       latest     8.44MB</span>
+<span class="out" style="color:var(--orange3);">node         18-alpine  127MB</span>
+      </div>
+    </div>
+    <div>
+      <div class="code-label">Visual Size Comparison (your actual output)</div>
+      <div style="background:var(--card);border:1px solid var(--border);overflow:hidden;">
+        <div class="size-bar-wrap">
+          <div class="size-row">
+            <div class="size-label" style="color:var(--green);">alpine</div>
+            <div class="size-track">
+              <div class="size-fill alpine" style="width:0.75%;">8MB</div>
+            </div>
+            <div class="size-num" style="color:var(--green);">8.44MB</div>
+          </div>
+          <div class="size-row">
+            <div class="size-label" style="color:var(--orange3);">node:18-alpine</div>
+            <div class="size-track">
+              <div class="size-fill node18" style="width:12%;min-width:80px;">127MB</div>
+            </div>
+            <div class="size-num" style="color:var(--orange3);">127MB</div>
+          </div>
+          <div class="size-row">
+            <div class="size-label" style="color:var(--amber);">ubuntu</div>
+            <div class="size-track">
+              <div class="size-fill ubuntu" style="width:7%;min-width:60px;">78MB</div>
+            </div>
+            <div class="size-num" style="color:var(--amber);">78.1MB</div>
+          </div>
+          <div class="size-row">
+            <div class="size-label" style="color:var(--red);">node:latest</div>
+            <div class="size-track">
+              <div class="size-fill nodefull" style="width:100%;">1.13GB</div>
+            </div>
+            <div class="size-num" style="color:var(--red);">1.13GB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;" class="gap-16">
+    <div class="compare-card green">
+      <div class="card-label green">🐳 Alpine</div>
+      <div class="card-title">8.44 MB</div>
+      <ul class="bullet-list green-dot" style="font-size:11px;">
+        <li>Minimal Linux (BusyBox)</li>
+        <li>Uses <strong style="color:var(--teal)">musl libc</strong> (not glibc)</li>
+        <li>Very limited shell tools</li>
+        <li>Smallest attack surface</li>
+      </ul>
+      <div style="margin-top:12px;padding:7px 10px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);font-size:10px;color:var(--green);">✅ Best for: lightweight prod microservices</div>
+      <div style="margin-top:6px;padding:7px 10px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);font-size:10px;color:var(--red);">❌ Watch out: musl libc can break some apps</div>
+    </div>
+    <div class="compare-card amber">
+      <div class="card-label amber">🐳 Ubuntu</div>
+      <div class="card-title">78.1 MB</div>
+      <ul class="bullet-list amber-dot" style="font-size:11px;">
+        <li>Full Linux utilities</li>
+        <li>apt package manager</li>
+        <li>Uses <strong style="color:var(--teal)">glibc</strong> (app-compatible)</li>
+        <li>Full bash + debug tools</li>
+      </ul>
+      <div style="margin-top:12px;padding:7px 10px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);font-size:10px;color:var(--green);">✅ Best for: dev/test, debug-heavy, enterprise apps</div>
+      <div style="margin-top:6px;padding:7px 10px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);font-size:10px;color:var(--red);">❌ Bigger image, slower pull in CI/CD</div>
+    </div>
+    <div class="compare-card orange">
+      <div class="card-label orange">🐳 node:18-alpine</div>
+      <div class="card-title">127 MB</div>
+      <ul class="bullet-list" style="font-size:11px;">
+        <li>Alpine base + Node.js runtime</li>
+        <li>Required deps bundled</li>
+        <li>Ready for Node apps</li>
+        <li>Much smaller than node:latest</li>
+      </ul>
+      <div style="margin-top:12px;padding:7px 10px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);font-size:10px;color:var(--green);">✅ Best for: Node.js production apps</div>
+      <div style="margin-top:6px;padding:7px 10px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);font-size:10px;color:var(--red);">❌ Some native modules may need extra libs</div>
+    </div>
+  </div>
+
+  <!-- comparison table -->
+  <div class="table-wrap gap-16" style="margin-top:16px;">
+    <table class="comp-table">
+      <thead><tr><th>Scenario</th><th>Recommended Image</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Simple microservice in prod</td><td class="green">alpine / node:18-alpine</td><td>Smallest size, fastest pull</td></tr>
+        <tr><td>Debug-heavy system</td><td class="amber">ubuntu / debian</td><td>Full tooling (bash, apt, curl)</td></tr>
+        <tr><td>Enterprise Java app</td><td class="blue">eclipse-temurin (debian)</td><td>glibc compatibility, stable</td></tr>
+        <tr><td>React static site</td><td class="teal">nginx:alpine</td><td>Tiny runtime to serve HTML</td></tr>
+        <tr><td>Local development</td><td class="orange">ubuntu</td><td>Easy debugging, familiar tools</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SRE impact -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--teal);padding:16px;">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--teal);margin-bottom:8px;">🚀 Deploy Speed</div>
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">8MB pulls in seconds. 1.13GB takes minutes. In Kubernetes auto-scaling, that's the difference between instant scaling and SLA breach.</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);padding:16px;">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--green);margin-bottom:8px;">🔒 Security</div>
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">Fewer packages = fewer CVEs. Alpine with 8MB has dramatically fewer vulnerabilities than ubuntu at 78MB.</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--orange);padding:16px;">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--orange3);margin-bottom:8px;">💰 Cost</div>
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">10 pods × 1.13GB = 11.3GB in registry. 10 pods × 8MB = 80MB. ECR egress costs are real at scale.</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);padding:16px;">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--red);margin-bottom:8px;">⚠️ Alpine Trap</div>
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">musl libc ≠ glibc. Some Python packages (numpy, pandas), Java native libs fail on Alpine. Test before shipping.</div>
+    </div>
+  </div>
+
+  <div class="insight teal" style="margin-top:14px;">
+    <div class="insight-icon">🏆</div>
+    <div class="insight-body">
+      <strong>Your answers (polished for interviews):</strong><br>
+      "Alpine is smallest because it uses a minimal BusyBox-based Linux with very few packages, reducing both size and attack surface. However, it uses musl libc instead of glibc, which can cause compatibility issues with some apps. I choose the base image based on requirements — alpine/slim for production, ubuntu/debian for debugging or enterprise compatibility."
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- S2: DOCKER IMAGE LAYERS -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <span class="section-title">DOCKER IMAGE LAYERS — docker history</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="insight teal gap-24">
+    <div class="insight-icon">🧠</div>
+    <div class="insight-body">
+      <strong>Core Rule:</strong> Every line in <code>docker history</code> = one layer. Every Dockerfile instruction creates a layer. Image = stack of layers, bottom to top. Layers with size 0B are metadata only (CMD, ENV, LABEL, ARG).
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:18px;margin-top:20px;">
+
+    <!-- ALPINE -->
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--green);padding:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div class="card-label green" style="margin-bottom:0;">🐳 Alpine — 2 Layers (Simplest)</div>
+        <div style="font-size:10px;color:var(--text3);">docker history alpine</div>
+      </div>
+      <div class="layer-bar">
+        <div class="layer-row">
+          <div class="layer-fill l-zero" style="width:120px;">0B</div>
+          <div class="layer-cmd"><code style="color:var(--purple);">CMD ["/bin/sh"]</code> — runtime instruction (metadata only)</div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-small" style="width:220px;">8.44MB ←</div>
+          <div class="layer-cmd"><code style="color:var(--orange3);">ADD alpine-minirootfs.tar.gz /</code> — the actual OS filesystem</div>
+        </div>
+      </div>
+      <div class="insight green" style="margin-top:12px;">
+        <div class="insight-icon">✅</div>
+        <div class="insight-body"><strong>Why only 2 layers?</strong> Alpine's philosophy is minimalism. One layer for the OS, one for the default command. Nothing else. This is why it's 8MB and pulls so fast.</div>
+      </div>
+    </div>
+
+    <!-- UBUNTU -->
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--amber);padding:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div class="card-label amber" style="margin-bottom:0;">🐳 Ubuntu — ~6 Layers</div>
+        <div style="font-size:10px;color:var(--text3);">docker history ubuntu</div>
+      </div>
+      <div class="layer-bar">
+        <div class="layer-row">
+          <div class="layer-fill l-zero" style="width:100px;">0B</div>
+          <div class="layer-cmd"><code style="color:var(--purple);">CMD ["/bin/bash"]</code></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-big" style="width:260px;">78.1MB ←</div>
+          <div class="layer-cmd"><code style="color:var(--orange3);">ADD file: rootfs.tar.xz</code> — full Ubuntu OS</div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-zero" style="width:100px;">0B</div>
+          <div class="layer-cmd"><code style="color:var(--text3);">LABEL org.opencontainers...</code></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-zero" style="width:100px;">0B</div>
+          <div class="layer-cmd"><code style="color:var(--text3);">ARG RELEASE / ARG LAUNCHPAD...</code> — build args (metadata)</div>
+        </div>
+      </div>
+      <div class="insight amber" style="margin-top:12px;">
+        <div class="insight-icon">💡</div>
+        <div class="insight-body"><strong>Key insight:</strong> Only 1 heavy layer (78MB ADD). The rest are 0B metadata. Total layers ~6 but only one has real size. LABELs and ARGs add zero bytes.</div>
+      </div>
+    </div>
+
+    <!-- NODE LATEST -->
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);padding:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div class="card-label red" style="margin-bottom:0;">🐳 Node:latest — 12+ Layers (Why it's 1.13GB)</div>
+        <div style="font-size:10px;color:var(--text3);">docker history node</div>
+      </div>
+      <div class="layer-bar">
+        <div class="layer-row">
+          <div class="layer-fill l-zero" style="width:80px;">0B</div>
+          <div class="layer-cmd"><code style="color:var(--purple);">CMD ["node"]</code></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-zero" style="width:80px;">0B</div>
+          <div class="layer-cmd"><code style="color:var(--purple);">ENTRYPOINT ["docker-entrypoint.sh"]</code></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-zero" style="width:80px;">388B</div>
+          <div class="layer-cmd"><code style="color:var(--orange3);">COPY docker-entrypoint.sh /usr/local/bin/</code></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-small" style="width:90px;">5.3MB</div>
+          <div class="layer-cmd"><code style="color:var(--orange3);">RUN set -ex && export GNUPGHOME...</code> — Yarn install</div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-med" style="width:180px;">198MB</div>
+          <div class="layer-cmd"><code style="color:var(--orange3);">RUN ARCH= && dpkgArch... Node.js install</code></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-big" style="width:220px;">588MB ← BIGGEST</div>
+          <div class="layer-cmd"><code style="color:var(--orange3);">RUN set -ex; apt-get update; apt-get install...</code></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-med" style="width:160px;">177MB</div>
+          <div class="layer-cmd"><code style="color:var(--orange3);">RUN set -eux; apt-get update...</code></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-small" style="width:120px;">48.4MB</div>
+          <div class="layer-cmd"><code style="color:var(--orange3);">RUN set -eux; apt-get update...</code></div>
+        </div>
+        <div class="layer-row">
+          <div class="layer-fill l-med" style="width:140px;">117MB</div>
+          <div class="layer-cmd"><code style="color:var(--text3);">debian.sh (base Debian OS layer)</code></div>
+        </div>
+      </div>
+      <div class="insight sre" style="margin-top:12px;">
+        <div class="insight-icon">🔥</div>
+        <div class="insight-body">
+          <strong>Why node:latest = 1.13GB?</strong> Each RUN apt-get creates a separate layer. Multiple installs = multiple large layers stacked. Every RUN command is a new layer — even if they install the same packages. This is why you should <strong>chain RUN commands</strong> with && in production Dockerfiles.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="table-wrap" style="margin-top:16px;">
+    <table class="comp-table">
+      <thead><tr><th>Image</th><th>Layer Count</th><th>Real Size Layers</th><th>Total Size</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>alpine</td><td class="green">2</td><td class="green">1 (ADD)</td><td class="green">8.44MB</td><td>Minimal OS, nothing extra</td></tr>
+        <tr><td>ubuntu</td><td class="amber">~6</td><td class="amber">1 (ADD)</td><td class="amber">78.1MB</td><td>Full OS, rest is metadata</td></tr>
+        <tr><td>node:18-alpine</td><td class="orange">~8</td><td class="orange">3–4 RUN</td><td class="orange">127MB</td><td>Alpine + Node runtime layers</td></tr>
+        <tr><td>node:latest</td><td class="red">12+</td><td class="red">7+ RUN</td><td class="red">1.13GB</td><td>Debian base + many apt installs</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="interview-badge">💬 "Why does node image have more layers than alpine?" — Each RUN instruction creates a separate layer; node:latest has multiple apt-get installs each adding a new layer.</div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- S3: LAYER CACHING -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <span class="section-title">DOCKER LAYER CACHING — MOST IMPORTANT</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- Core rule -->
+  <div style="background:rgba(0,229,200,0.06);border:1px solid rgba(0,229,200,0.3);border-left:4px solid var(--teal);padding:24px 28px;margin-bottom:24px;">
+    <div style="font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;">🔥 The One Rule to Rule Them All</div>
+    <div style="font-family:var(--display);font-size:clamp(16px,2.5vw,26px);letter-spacing:0.05em;color:var(--white);margin-bottom:10px;">
+      If a layer changes → ALL layers below it are rebuilt
+    </div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.75;">
+      Docker builds <strong style="color:var(--teal)">top → bottom</strong>. Cache hit on every layer until the first change. Once a layer is invalidated, every layer after it must be rebuilt — no exceptions.
+    </div>
+  </div>
+
+  <div class="compare-grid gap-20">
+
+    <!-- GOOD ORDER -->
+    <div>
+      <div class="code-label">✅ Good Dockerfile — Cache-Optimized</div>
+      <div class="code-wrap green-border" style="margin-bottom:14px;">
+<span class="comment"># 1. Base image — rarely changes</span>
+<span class="kw">FROM</span> <span class="val">node:18-alpine</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+
+<span class="comment"># 2. Copy only deps file FIRST</span>
+<span class="kw">COPY</span> <span class="str">package.json</span> <span class="val">.</span>
+
+<span class="comment"># 3. Install — heavy, but cached</span>
+<span class="kw">RUN</span> <span class="cmd">npm install</span>
+
+<span class="comment"># 4. Copy code LAST (changes often)</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+
+<span class="kw">CMD</span> <span class="str">["node", "app.js"]</span>
+      </div>
+
+      <!-- Case 1: code change -->
+      <div class="code-label">Case 1 — Only app.js changes</div>
+      <div class="layer-bar gap-12">
+        <div class="cache-step">
+          <div class="cache-num">1</div>
+          <div class="cache-block cached">FROM node:18-alpine <span class="cache-badge">✅ CACHED</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">2</div>
+          <div class="cache-block cached">COPY package.json . <span class="cache-badge">✅ CACHED — file unchanged</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">3</div>
+          <div class="cache-block cached">RUN npm install <span class="cache-badge">✅ CACHED — no reinstall!</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">4</div>
+          <div class="cache-block rebuild">COPY . . <span class="cache-badge">🔄 REBUILD — code changed</span></div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);font-size:11px;color:var(--green);">⚡ Build time: ~5 seconds (no npm install)</div>
+
+      <!-- Case 2: package.json change -->
+      <div class="code-label" style="margin-top:14px;">Case 2 — package.json changes (new dependency)</div>
+      <div class="layer-bar">
+        <div class="cache-step">
+          <div class="cache-num">1</div>
+          <div class="cache-block cached">FROM node:18-alpine <span class="cache-badge">✅ CACHED</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">2</div>
+          <div class="cache-block rebuild">COPY package.json . <span class="cache-badge">🔄 CHANGED — new dep added</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">3</div>
+          <div class="cache-block rebuild">RUN npm install <span class="cache-badge">🔄 MUST RERUN</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">4</div>
+          <div class="cache-block rebuild">COPY . . <span class="cache-badge">🔄 REBUILD</span></div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:rgba(255,184,48,0.07);border:1px solid rgba(255,184,48,0.25);font-size:11px;color:var(--amber);">🐢 Build time: 2–5 min (npm install runs again — correct behaviour)</div>
+    </div>
+
+    <!-- BAD ORDER -->
+    <div>
+      <div class="code-label">❌ Bad Dockerfile — Cache-Broken</div>
+      <div class="code-wrap red-border" style="margin-bottom:14px;">
+<span class="comment"># WRONG — code copied before install</span>
+<span class="kw">FROM</span> <span class="val">node:18-alpine</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+
+<span class="comment"># Code first (changes every time!)</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+
+<span class="comment"># Install AFTER code — broken cache</span>
+<span class="kw">RUN</span> <span class="cmd">npm install</span>
+
+<span class="kw">CMD</span> <span class="str">["node", "app.js"]</span>
+      </div>
+
+      <div class="code-label">What happens when you change app.js</div>
+      <div class="layer-bar gap-12">
+        <div class="cache-step">
+          <div class="cache-num">1</div>
+          <div class="cache-block cached">FROM node:18-alpine <span class="cache-badge">✅ CACHED</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">2</div>
+          <div class="cache-block rebuild">COPY . . <span class="cache-badge">🔄 ANY FILE CHANGE = MISS</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">3</div>
+          <div class="cache-block rebuild">RUN npm install <span class="cache-badge">🔄 ALWAYS REINSTALLS ❌</span></div>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.25);font-size:11px;color:var(--red);">🐢 Build time: 5–10 min EVERY TIME (even for 1 line change)</div>
+
+      <!-- Visual rule -->
+      <div style="margin-top:20px;background:var(--card);border:1px solid var(--border);padding:20px;">
+        <div class="code-label">The Lunchbox Analogy (your understanding)</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+          <div style="font-size:12px;color:var(--text2);padding:8px 12px;background:var(--bg2);border-left:2px solid var(--text3);">📦 Packing lunch in steps: rice → curry → salad → dessert</div>
+          <div style="font-size:12px;color:var(--text2);padding:8px 12px;background:var(--bg2);border-left:2px solid var(--text3);">If you change only dessert → rice, curry, salad unchanged</div>
+          <div style="font-size:12px;color:var(--green);padding:8px 12px;background:rgba(57,217,138,0.07);border-left:2px solid var(--green);">✅ Same in Docker: change code (last step) → only last layer rebuilds</div>
+          <div style="font-size:12px;color:var(--red);padding:8px 12px;background:rgba(255,71,87,0.07);border-left:2px solid var(--red);">❌ Put changing thing first → everything after it rebuilds</div>
+        </div>
+      </div>
+
+      <div class="insight" style="margin-top:14px;">
+        <div class="insight-icon">🎯</div>
+        <div class="insight-body">
+          <strong>Your polished insight:</strong> "Stable, rarely-changing layers (base image, dependencies) go at the top. Frequently-changing layers (app code) go at the bottom. This maximizes cache hits and keeps CI/CD builds fast."
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:16px;">
+    <table class="comp-table">
+      <thead><tr><th>Layer Type</th><th>Changes How Often</th><th>Position</th><th>CI/CD Impact</th></tr></thead>
+      <tbody>
+        <tr><td>Base image (FROM)</td><td class="green">Almost never</td><td class="green">Top ✅</td><td class="green">Always cached</td></tr>
+        <tr><td>package.json / requirements.txt</td><td class="amber">Occasionally (new deps)</td><td class="green">Near top ✅</td><td class="amber">Cache until dep changes</td></tr>
+        <tr><td>RUN npm install / pip install</td><td class="amber">With dep file</td><td class="green">After dep file ✅</td><td class="amber">Cached most builds</td></tr>
+        <tr><td>COPY . . (app code)</td><td class="red">Every commit</td><td class="red">Bottom ✅</td><td class="green">Only this layer rebuilds</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="interview-badge">💬 "Why COPY package.json before COPY . .?" — To leverage layer caching. Dependencies change rarely; code changes every commit. Putting stable layers first avoids reinstalling npm packages on every code change, reducing build time from minutes to seconds.</div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- S4: MULTI-STAGE BUILDS -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <span class="section-title">MULTI-STAGE BUILDS — PRODUCTION LEVEL</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- Problem statement -->
+  <div class="compare-grid gap-24">
+    <div>
+      <div style="margin-bottom:12px;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--red);">❌ Problem — Single Stage</div>
+      <div class="code-wrap red-border">
+<span class="kw">FROM</span> <span class="val">node:18</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">RUN</span> <span class="cmd">npm install</span>
+<span class="kw">RUN</span> <span class="cmd">npm run build</span>
+<span class="kw">CMD</span> <span class="str">["node", "app.js"]</span>
+<br>
+<span class="comment"># Final image contains:</span>
+<span class="out" style="color:var(--red);">❌ node_modules (dev deps)</span>
+<span class="out" style="color:var(--red);">❌ Source code</span>
+<span class="out" style="color:var(--red);">❌ Build tools (compilers)</span>
+<span class="out" style="color:var(--red);">❌ npm cache</span>
+<span class="out" style="color:var(--red);">Result: 1GB+ image 😱</span>
+      </div>
+    </div>
+    <div>
+      <div style="margin-bottom:12px;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--green);">✅ Solution — Multi-Stage</div>
+      <div class="code-wrap green-border">
+<span class="comment"># Stage 1: Build</span>
+<span class="kw">FROM</span> <span class="val">node:18</span> <span class="kw">AS</span> <span class="tag">builder</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="str">package.json</span> <span class="val">.</span>
+<span class="kw">RUN</span> <span class="cmd">npm install</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">RUN</span> <span class="cmd">npm run build</span>
+<br>
+<span class="comment"># Stage 2: Run (clean slate)</span>
+<span class="kw">FROM</span> <span class="val">node:18-alpine</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="flag">--from=</span><span class="tag">builder</span> <span class="val">/app/dist ./dist</span>
+<span class="kw">CMD</span> <span class="str">["node", "dist/app.js"]</span>
+<br>
+<span class="comment"># Final image contains:</span>
+<span class="out" style="color:var(--green);">✅ Only dist/ files</span>
+<span class="out" style="color:var(--green);">Result: ~100MB ✅</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual diagram -->
+  <div style="margin:20px 0;" class="ms-visual">
+    <div class="ms-stage build">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--orange);margin-bottom:14px;">🏗️ Stage 1 — Builder (Heavy)</div>
+      <div class="ms-item"><div class="ms-icon">📦</div><div style="font-size:11px;color:var(--text2);">node:18 full image</div></div>
+      <div class="ms-item"><div class="ms-icon">📁</div><div style="font-size:11px;color:var(--text2);">Source code</div></div>
+      <div class="ms-item"><div class="ms-icon">🔧</div><div style="font-size:11px;color:var(--text2);">node_modules (all deps)</div></div>
+      <div class="ms-item"><div class="ms-icon">🔨</div><div style="font-size:11px;color:var(--text2);">Build tools</div></div>
+      <div class="ms-item"><div class="ms-icon">📤</div><div style="font-size:11px;color:var(--green);">→ outputs dist/</div></div>
+      <div style="margin-top:12px;font-size:11px;color:var(--red);">Size: ~1GB (temporary — discarded)</div>
+    </div>
+    <div class="ms-arrow">
+      <div class="ms-arrow-line">→</div>
+      <div class="ms-arrow-label">COPY<br>--from=builder<br>only dist/</div>
+    </div>
+    <div class="ms-stage final">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--green);margin-bottom:14px;">🚀 Stage 2 — Final (Clean)</div>
+      <div class="ms-item"><div class="ms-icon">📦</div><div style="font-size:11px;color:var(--text2);">node:18-alpine (small)</div></div>
+      <div class="ms-item"><div class="ms-icon">📂</div><div style="font-size:11px;color:var(--green);">dist/ files only ✅</div></div>
+      <div class="ms-item"><div class="ms-icon">❌</div><div style="font-size:11px;color:var(--text3);">No source code</div></div>
+      <div class="ms-item"><div class="ms-icon">❌</div><div style="font-size:11px;color:var(--text3);">No build tools</div></div>
+      <div class="ms-item"><div class="ms-icon">❌</div><div style="font-size:11px;color:var(--text3);">No node_modules (dev)</div></div>
+      <div style="margin-top:12px;font-size:11px;color:var(--green);">Size: ~100MB ✅ (this is what ships)</div>
+    </div>
+  </div>
+
+  <!-- House analogy -->
+  <div style="background:var(--card);border:1px solid var(--border);padding:24px;margin-bottom:20px;">
+    <div class="code-label">🏗️ House-Building Analogy (remember this forever)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px;">
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;padding:14px;background:rgba(255,107,26,0.05);border:1px solid rgba(255,107,26,0.2);">
+        <strong style="color:var(--orange3);">🏗️ Construction Site (builder stage)</strong><br>
+        Cranes, cement mixers, scaffolding, workers, raw materials — everything needed to BUILD the house.
+      </div>
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;padding:14px;background:rgba(57,217,138,0.05);border:1px solid rgba(57,217,138,0.2);">
+        <strong style="color:var(--green);">🏠 Final House (production image)</strong><br>
+        Clean, furnished, ready to live in. No cranes inside. No cement bags. No scaffolding. Just what you need.
+      </div>
+    </div>
+    <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--teal);padding:8px;">
+      <strong>Build tools are ONLY in Stage 1 — they never appear in the final image.</strong>
+    </div>
+  </div>
+
+  <!-- Real company patterns -->
+  <div class="code-label">Real Company Patterns</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:16px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--blue);padding:20px;">
+      <div style="font-size:9px;color:var(--blue);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:10px;">🟢 React App</div>
+      <div class="code-wrap blue-border" style="font-size:10px;padding:10px 14px;">
+<span class="comment"># Build</span>
+<span class="kw">FROM</span> <span class="val">node:18</span> <span class="kw">AS</span> <span class="tag">build</span>
+<span class="kw">RUN</span> <span class="cmd">npm run build</span>
+<span class="comment"># Serve</span>
+<span class="kw">FROM</span> <span class="val">nginx:alpine</span>
+<span class="kw">COPY</span> <span class="flag">--from=</span><span class="tag">build</span> <span class="val">/app/build /usr/share/nginx/html</span>
+      </div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);padding:20px;">
+      <div style="font-size:9px;color:var(--red);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:10px;">☕ Java / Spring Boot</div>
+      <div class="code-wrap red-border" style="font-size:10px;padding:10px 14px;">
+<span class="comment"># Build</span>
+<span class="kw">FROM</span> <span class="val">maven:3.9</span> <span class="kw">AS</span> <span class="tag">builder</span>
+<span class="kw">RUN</span> <span class="cmd">mvn package</span>
+<span class="comment"># Run</span>
+<span class="kw">FROM</span> <span class="val">eclipse-temurin:17-alpine</span>
+<span class="kw">COPY</span> <span class="flag">--from=</span><span class="tag">builder</span> <span class="val">*.jar app.jar</span>
+      </div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--amber);padding:20px;">
+      <div style="font-size:9px;color:var(--amber);letter-spacing:0.2em;text-transform:uppercase;margin-bottom:10px;">🐍 Python (ML apps)</div>
+      <div class="code-wrap amber-border" style="font-size:10px;padding:10px 14px;">
+<span class="comment"># Build</span>
+<span class="kw">FROM</span> <span class="val">python:3.10</span> <span class="kw">AS</span> <span class="tag">builder</span>
+<span class="kw">RUN</span> <span class="cmd">pip install --prefix=/install -r requirements.txt</span>
+<span class="comment"># Run</span>
+<span class="kw">FROM</span> <span class="val">python:3.10-slim</span>
+<span class="kw">COPY</span> <span class="flag">--from=</span><span class="tag">builder</span> <span class="val">/install /usr/local</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="comp-table">
+      <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+      <tbody>
+        <tr><td>Where are build tools in final image?</td><td class="green">NOT there. Second FROM starts a completely fresh image.</td></tr>
+        <tr><td>What does <code>--from=builder</code> do?</td><td class="teal">Copies files from a previous stage into the current stage.</td></tr>
+        <tr><td>When is multi-stage most useful?</td><td class="orange">React builds, Java JAR builds, Go binaries — when build output ≠ source code.</td></tr>
+        <tr><td>Security benefit?</td><td class="blue">Source code, secrets, build credentials never reach the final image.</td></tr>
+        <tr><td>Size reduction for Java?</td><td class="amber">800MB+ (maven) → ~200MB (JRE only). ~75% reduction.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- S5: DOCKERFILE FORMULA -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <span class="section-title">DOCKERFILE WRITING FORMULA</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div style="background:rgba(0,229,200,0.06);border:1px solid rgba(0,229,200,0.3);border-left:4px solid var(--teal);padding:24px 28px;margin-bottom:24px;">
+    <div style="font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;">🧠 The Golden Formula — Write Any Dockerfile</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;">
+      <div style="text-align:center;padding:12px;background:rgba(0,229,200,0.07);border:1px solid rgba(0,229,200,0.2);">
+        <div style="font-family:var(--display);font-size:22px;color:var(--teal);">1</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:4px;">Base Image<br>(runtime)</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:rgba(0,229,200,0.07);border:1px solid rgba(0,229,200,0.2);">
+        <div style="font-family:var(--display);font-size:22px;color:var(--teal);">2</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:4px;">Working Dir<br>WORKDIR</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:rgba(0,229,200,0.07);border:1px solid rgba(0,229,200,0.2);">
+        <div style="font-family:var(--display);font-size:22px;color:var(--teal);">3</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:4px;">Copy dep file<br>COPY x.json .</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:rgba(0,229,200,0.07);border:1px solid rgba(0,229,200,0.2);">
+        <div style="font-family:var(--display);font-size:22px;color:var(--teal);">4</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:4px;">Install deps<br>RUN install</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:rgba(0,229,200,0.07);border:1px solid rgba(0,229,200,0.2);">
+        <div style="font-family:var(--display);font-size:22px;color:var(--teal);">5</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:4px;">Copy all code<br>COPY . .</div>
+      </div>
+      <div style="text-align:center;padding:12px;background:rgba(0,229,200,0.07);border:1px solid rgba(0,229,200,0.2);">
+        <div style="font-family:var(--display);font-size:22px;color:var(--teal);">6</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:4px;">Run app<br>CMD [...]</div>
+      </div>
+    </div>
+    <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">
+      Ask 3 questions: <strong style="color:var(--teal)">What is the runtime?</strong> (node/python/java) · <strong style="color:var(--teal)">What are the deps?</strong> (package.json/requirements.txt/pom.xml) · <strong style="color:var(--teal)">What is the run command?</strong> (node app.js / python app.py / java -jar)
+    </div>
+  </div>
+
+  <div class="table-wrap gap-16">
+    <table class="comp-table">
+      <thead><tr><th>App Type</th><th>Base Image</th><th>Dep File</th><th>Install Command</th><th>Run Command</th></tr></thead>
+      <tbody>
+        <tr><td class="blue">Node.js</td><td><code style="color:var(--orange3)">node:18-alpine</code></td><td><code>package.json</code></td><td><code>npm install</code></td><td><code>node app.js</code></td></tr>
+        <tr><td class="amber">Python</td><td><code style="color:var(--orange3)">python:3.10-slim</code></td><td><code>requirements.txt</code></td><td><code>pip install -r requirements.txt</code></td><td><code>python app.py</code></td></tr>
+        <tr><td class="red">Java</td><td><code style="color:var(--orange3)">maven:3.9 (build)</code></td><td><code>pom.xml</code></td><td><code>mvn clean package</code></td><td><code>java -jar app.jar</code></td></tr>
+        <tr><td class="teal">React</td><td><code style="color:var(--orange3)">node:18 → nginx:alpine</code></td><td><code>package.json</code></td><td><code>npm run build</code></td><td>nginx serves static</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);padding:20px;margin-top:16px;">
+    <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--red);margin-bottom:12px;">💣 Common Mistakes</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div>
+        <div style="font-size:10px;color:var(--red);margin-bottom:7px;">❌ RUN instead of CMD</div>
+        <div class="code-wrap red-border" style="font-size:10px;padding:8px 12px;">
+<span class="comment"># Wrong! Runs at BUILD time</span>
+<span class="kw">RUN</span> <span class="str">["python", "app.py"]</span>
+<span class="out" style="color:var(--red);">→ tries to start server during build</span>
+<span class="out" style="color:var(--red);">→ build hangs or fails</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--green);margin-bottom:7px;">✅ Correct: CMD for runtime</div>
+        <div class="code-wrap green-border" style="font-size:10px;padding:8px 12px;">
+<span class="comment"># Correct! Runs when container starts</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+<span class="out" style="color:var(--green);">→ runs when: docker run ...</span>
+<span class="out" style="color:var(--green);">→ build completes fine</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:10px;font-size:11px;padding:8px 12px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);">
+      <span style="color:var(--red);">⚠️</span>
+      <span style="color:var(--text2);">You hit this exact bug in Python app: <code style="color:var(--red)">RUN ["python", "app.py"]</code> tried to start the server during build → failed with exit code 1. Always use <code style="color:var(--green)">CMD</code> for the run command.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- S6: NODE APP -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <span class="section-title">NODE.JS DOCKERFILE — NORMAL & MULTI-STAGE</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="compare-grid gap-20">
+    <div>
+      <div class="code-label">Normal Dockerfile</div>
+      <div class="code-wrap">
+<span class="comment"># Base image (alpine = lightweight)</span>
+<span class="kw">FROM</span> <span class="val">node:18-alpine</span>
+
+<span class="comment"># Set working directory</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+
+<span class="comment"># Copy dep file FIRST (caching)</span>
+<span class="kw">COPY</span> <span class="str">package.json</span> <span class="val">.</span>
+
+<span class="comment"># Install</span>
+<span class="kw">RUN</span> <span class="cmd">npm install</span>
+
+<span class="comment"># Copy code</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+
+<span class="comment"># Expose (good practice)</span>
+<span class="kw">EXPOSE</span> <span class="val">3000</span>
+
+<span class="comment"># Run</span>
+<span class="kw">CMD</span> <span class="str">["node", "app.js"]</span>
+      </div>
+      <div class="code-label" style="margin-top:12px;">Build & Run</div>
+      <div class="code-wrap teal-border">
+<span class="comment"># ⚠️ Common mistake — missing dot!</span>
+<span class="cmd">docker build</span> <span class="flag">-t</span> <span class="val">node-app</span> <span class="out">.</span>
+<span class="comment"># The . = current directory (build context)</span>
+<span class="comment"># Without it: ERROR requires 1 argument</span>
+<br>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">3000:3000</span> <span class="tag">node-app</span>
+      </div>
+    </div>
+    <div>
+      <div class="code-label">Multi-Stage Dockerfile (Production)</div>
+      <div class="code-wrap green-border">
+<span class="comment"># ─── Stage 1: Build ───</span>
+<span class="kw">FROM</span> <span class="val">node:18</span> <span class="kw">AS</span> <span class="tag">builder</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="str">package.json</span> <span class="val">.</span>
+<span class="kw">RUN</span> <span class="cmd">npm install</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="comment"># If your app has build step:</span>
+<span class="comment"># RUN npm run build</span>
+<br>
+<span class="comment"># ─── Stage 2: Run ───</span>
+<span class="kw">FROM</span> <span class="val">node:18-alpine</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="comment"># Copy ONLY what you need to run</span>
+<span class="kw">COPY</span> <span class="flag">--from=</span><span class="tag">builder</span> <span class="val">/app/dist ./dist</span>
+<span class="kw">EXPOSE</span> <span class="val">3000</span>
+<span class="kw">CMD</span> <span class="str">["node", "dist/app.js"]</span>
+      </div>
+      <div class="insight teal" style="margin-top:12px;">
+        <div class="insight-icon">💡</div>
+        <div class="insight-body">
+          <strong>When does multi-stage help for Node?</strong> Most useful when you have a build step (TypeScript → JS, React → static). For a simple Node app with no build step, the size reduction is minimal — but it still separates concerns cleanly.
+        </div>
+      </div>
+      <div class="insight sre" style="margin-top:10px;">
+        <div class="insight-icon">⚠️</div>
+        <div class="insight-body">
+          <strong>Debug you hit:</strong> <code style="color:var(--red)">docker build -t node-app</code> — missing the <code style="color:var(--orange3)">.</code> at the end. The dot tells Docker to use the current directory as the build context. Without it, Docker doesn't know where your Dockerfile and code are.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- S7: PYTHON APP -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <span class="section-title">PYTHON DOCKERFILE — DEBUG INCLUDED</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="compare-grid gap-20">
+    <div>
+      <div class="code-label">Normal Dockerfile</div>
+      <div class="code-wrap">
+<span class="kw">FROM</span> <span class="val">python:3.10-slim</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="str">requirements.txt</span> <span class="val">.</span>
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">--no-cache-dir</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">EXPOSE</span> <span class="val">5000</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+      </div>
+
+      <div class="code-label" style="margin-top:12px;">Multi-Stage (for large Python apps)</div>
+      <div class="code-wrap green-border">
+<span class="comment"># ─── Build ───</span>
+<span class="kw">FROM</span> <span class="val">python:3.10</span> <span class="kw">AS</span> <span class="tag">builder</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="str">requirements.txt</span> <span class="val">.</span>
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">--no-cache-dir</span> <span class="flag">--prefix=/install</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+<br>
+<span class="comment"># ─── Run ───</span>
+<span class="kw">FROM</span> <span class="val">python:3.10-slim</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="flag">--from=</span><span class="tag">builder</span> <span class="val">/install /usr/local</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">EXPOSE</span> <span class="val">5000</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+      </div>
+    </div>
+    <div>
+      <!-- Bug encountered -->
+      <div class="scenario">
+        <div class="scenario-title">Bug You Hit — RUN vs CMD Confusion</div>
+        <div class="code-wrap red-border" style="font-size:11px;">
+<span class="comment"># Your WRONG Dockerfile (line 7):</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">EXPOSE</span> <span class="val">5000</span>
+<span class="out" style="color:var(--red);">RUN ["python", "app.py"]  ← WRONG</span>
+<br>
+<span class="comment"># Error you got:</span>
+<span class="out" style="color:var(--red);">Dockerfile:7</span>
+<span class="out" style="color:var(--red);">>>> RUN ["python", "app.py"]</span>
+<span class="out" style="color:var(--red);">process "python app.py" did not complete</span>
+<span class="out" style="color:var(--red);">exit code: 1</span>
+        </div>
+        <div style="margin-top:12px;">
+          <div class="code-label">Root Cause & Fix</div>
+          <div class="table-wrap">
+            <table class="comp-table">
+              <thead><tr><th>Instruction</th><th>When It Runs</th><th>Use For</th></tr></thead>
+              <tbody>
+                <tr><td class="red">RUN</td><td class="red">During docker build</td><td>Installing packages, compiling</td></tr>
+                <tr><td class="green">CMD</td><td class="green">When container starts</td><td>Starting your application</td></tr>
+                <tr><td class="blue">ENTRYPOINT</td><td class="blue">When container starts</td><td>Fixed command, args via CMD</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="code-wrap green-border" style="margin-top:10px;font-size:11px;">
+<span class="comment"># ✅ Fixed:</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+<span class="out" style="color:var(--green);">→ runs when: docker run python-app</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- S8: JAVA APP -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <span class="section-num">08</span>
+    <span class="section-title">JAVA DOCKERFILE — REAL DEBUGGING</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="compare-grid gap-20">
+    <div>
+      <div class="code-label">Normal Dockerfile (Learning / Local)</div>
+      <div class="code-wrap amber-border">
+<span class="comment"># Maven image = Java + build tools</span>
+<span class="kw">FROM</span> <span class="val">maven:3.9.9-eclipse-temurin-17</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">RUN</span> <span class="cmd">mvn clean package</span> <span class="flag">-DskipTests</span>
+<span class="kw">EXPOSE</span> <span class="val">8080</span>
+<span class="kw">CMD</span> <span class="str">["java", "-jar", "target/docker-demo-1.0.jar"]</span>
+<br>
+<span class="comment"># ⚠️ Problem: ~800MB+ (maven included)</span>
+      </div>
+
+      <div class="code-label" style="margin-top:14px;">Multi-Stage Dockerfile (Production ✅)</div>
+      <div class="code-wrap green-border">
+<span class="comment"># ─── Stage 1: Build ───</span>
+<span class="kw">FROM</span> <span class="val">maven:3.9.9-eclipse-temurin-17</span> <span class="kw">AS</span> <span class="tag">builder</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="comment"># Copy pom FIRST (dep caching)</span>
+<span class="kw">COPY</span> <span class="str">pom.xml</span> <span class="val">.</span>
+<span class="kw">RUN</span> <span class="cmd">mvn dependency:go-offline</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">RUN</span> <span class="cmd">mvn clean package</span> <span class="flag">-DskipTests</span>
+<br>
+<span class="comment"># ─── Stage 2: Run ───</span>
+<span class="kw">FROM</span> <span class="val">eclipse-temurin:17-jdk-alpine</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="flag">--from=</span><span class="tag">builder</span> <span class="val">/app/target/*.jar app.jar</span>
+<span class="kw">EXPOSE</span> <span class="val">8080</span>
+<span class="kw">CMD</span> <span class="str">["java", "-jar", "app.jar"]</span>
+      </div>
+    </div>
+    <div>
+      <!-- Bug 1 -->
+      <div class="scenario" style="margin-bottom:14px;">
+        <div class="scenario-title">Bug 1 — no main manifest attribute</div>
+        <div class="code-wrap red-border" style="font-size:11px;margin-bottom:10px;">
+<span class="cmd">docker logs</span> <span class="val">java-app</span>
+<span class="out" style="color:var(--red);">no main manifest attribute, in target/docker-demo-1.0.jar</span>
+        </div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
+          <strong style="color:var(--red);">Root cause:</strong> Spring Boot plugin missing in pom.xml → JAR not executable → no <code>Main-Class</code> in <code>META-INF/MANIFEST.MF</code>
+        </div>
+        <div class="code-label">Fix — Add to pom.xml</div>
+        <div class="code-wrap green-border" style="font-size:11px;">
+<span class="out">&lt;build&gt;</span>
+<span class="out">  &lt;plugins&gt;</span>
+<span class="out">    &lt;plugin&gt;</span>
+<span class="out" style="color:var(--green);">      &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span>
+<span class="out" style="color:var(--green);">      &lt;artifactId&gt;spring-boot-maven-plugin&lt;/artifactId&gt;</span>
+<span class="out">    &lt;/plugin&gt;</span>
+<span class="out">  &lt;/plugins&gt;</span>
+<span class="out">&lt;/build&gt;</span>
+        </div>
+      </div>
+
+      <!-- Bug 2 -->
+      <div class="scenario amber">
+        <div class="scenario-title">Bug 2 — Unable to find main class</div>
+        <div class="code-wrap amber-border" style="font-size:11px;margin-bottom:10px;">
+<span class="out" style="color:var(--red);">Unable to find main class → [Help 1]</span>
+<span class="out" style="color:var(--red);">spring-boot-maven-plugin:repackage failed</span>
+        </div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
+          <strong style="color:var(--amber);">Root cause:</strong> <code>@EnableAutoConfiguration</code> alone is not enough. Spring Boot plugin needs <code>@SpringBootApplication</code> to auto-detect the entry point.
+        </div>
+        <div class="code-label">Fix — Update Java code</div>
+        <div class="code-wrap green-border" style="font-size:11px;">
+<span class="comment">// Wrong:</span>
+<span class="out" style="color:var(--red);">@EnableAutoConfiguration</span>
+<span class="out" style="color:var(--red);">public class Application { ... }</span>
+<br>
+<span class="comment">// Correct:</span>
+<span class="out" style="color:var(--green);">@RestController</span>
+<span class="out" style="color:var(--green);">@SpringBootApplication</span>
+<span class="out" style="color:var(--green);">public class Application { ... }</span>
+        </div>
+      </div>
+
+      <!-- Debug note -->
+      <div class="insight" style="margin-top:14px;">
+        <div class="insight-icon">🧠</div>
+        <div class="insight-body"><strong>SRE Debug Mindset:</strong> Container exits → check logs → error is from app (not infra) → fix app code → rebuild. Not every container failure is an infrastructure issue. Know when it's code vs config vs infra.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:16px;">
+    <table class="comp-table">
+      <thead><tr><th>Error</th><th>Root Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td class="red">no main manifest attribute</td><td>spring-boot-maven-plugin missing in pom.xml</td><td class="green">Add plugin to &lt;build&gt; section</td></tr>
+        <tr><td class="amber">Unable to find main class</td><td>Missing @SpringBootApplication annotation</td><td class="green">Replace @EnableAutoConfiguration</td></tr>
+        <tr><td class="red">-DskipTest (typo)</td><td>Missing 's' — Maven runs tests and fails</td><td class="green">Use -DskipTests (with s)</td></tr>
+        <tr><td class="orange">Port 8080 not accessible</td><td>AWS Security Group doesn't allow port 8080</td><td class="green">Add inbound rule in EC2 SG</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- S9: HOW APPS BUILD & RUN -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <span class="section-num">09</span>
+    <span class="section-title">HOW APPS BUILD & RUN — JAR / pom.xml EXPLAINED</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="insight teal gap-24">
+    <div class="insight-icon">🧠</div>
+    <div class="insight-body">
+      <strong>Big picture:</strong> Every application has 2 phases — BUILD (prepare the app) and RUN (execute it). Node and Python skip compilation (interpreted). Java MUST compile first. This is the fundamental difference, and it's exactly why Java uses multi-stage builds.
+    </div>
+  </div>
+
+  <div class="app-cols gap-24">
+
+    <!-- NODE -->
+    <div class="app-card">
+      <div class="app-card-header" style="border-left:3px solid var(--blue);background:rgba(74,158,255,0.05);">
+        <div>
+          <div class="app-lang-badge" style="color:var(--blue);">NODE.JS</div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.1em;">Interpreted — no compilation</div>
+        </div>
+      </div>
+      <div class="app-card-body">
+        <div class="code-label">Files</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+          <span style="font-size:10px;padding:4px 10px;border:1px solid var(--border);color:var(--blue);">app.js</span>
+          <span style="font-size:10px;padding:4px 10px;border:1px solid var(--border);color:var(--blue);">package.json</span>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num" style="color:var(--amber);">B</div>
+            <div class="step-body">
+              <div class="step-title">Build (Optional)</div>
+              <div class="step-code">npm install</div>
+              <div class="step-desc">Downloads deps to node_modules/</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="color:var(--green);">R</div>
+            <div class="step-body">
+              <div class="step-title">Run</div>
+              <div class="step-code">node app.js</div>
+              <div class="step-desc">Node reads JS, executes directly</div>
+            </div>
+          </div>
+        </div>
+        <div class="insight blue" style="margin-top:14px;">
+          <div class="insight-icon">⚡</div>
+          <div class="insight-body"><strong>No compilation.</strong> JavaScript is interpreted at runtime. No intermediate binary needed.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PYTHON -->
+    <div class="app-card">
+      <div class="app-card-header" style="border-left:3px solid var(--amber);background:rgba(255,184,48,0.05);">
+        <div>
+          <div class="app-lang-badge" style="color:var(--amber);">PYTHON</div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.1em;">Interpreted — no compilation</div>
+        </div>
+      </div>
+      <div class="app-card-body">
+        <div class="code-label">Files</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+          <span style="font-size:10px;padding:4px 10px;border:1px solid var(--border);color:var(--amber);">app.py</span>
+          <span style="font-size:10px;padding:4px 10px;border:1px solid var(--border);color:var(--amber);">requirements.txt</span>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num" style="color:var(--amber);">B</div>
+            <div class="step-body">
+              <div class="step-title">Build (Optional)</div>
+              <div class="step-code">pip install -r requirements.txt</div>
+              <div class="step-desc">Installs libraries to site-packages/</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="color:var(--green);">R</div>
+            <div class="step-body">
+              <div class="step-title">Run</div>
+              <div class="step-code">python app.py</div>
+              <div class="step-desc">Python reads .py, executes line by line</div>
+            </div>
+          </div>
+        </div>
+        <div class="insight amber" style="margin-top:14px;">
+          <div class="insight-icon">⚡</div>
+          <div class="insight-body"><strong>No compilation.</strong> Python interpreter reads and runs .py directly. Like Node, the source code itself is the runnable artifact.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JAVA -->
+    <div class="app-card">
+      <div class="app-card-header" style="border-left:3px solid var(--red);background:rgba(255,71,87,0.05);">
+        <div>
+          <div class="app-lang-badge" style="color:var(--red);">JAVA</div>
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.1em;">Compiled — MANDATORY build step</div>
+        </div>
+      </div>
+      <div class="app-card-body">
+        <div class="code-label">Files</div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+          <span style="font-size:10px;padding:4px 10px;border:1px solid var(--border);color:var(--red);">Application.java</span>
+          <span style="font-size:10px;padding:4px 10px;border:1px solid var(--border);color:var(--red);">pom.xml</span>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num" style="color:var(--red);">B</div>
+            <div class="step-body">
+              <div class="step-title">Build (MANDATORY)</div>
+              <div class="step-code">mvn clean package</div>
+              <div class="step-desc">Compile .java → .class → bundle into JAR</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="color:var(--orange);">J</div>
+            <div class="step-body">
+              <div class="step-title">Output: JAR file</div>
+              <div class="step-code">target/app.jar</div>
+              <div class="step-desc">Self-contained archive with all classes + deps</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="color:var(--green);">R</div>
+            <div class="step-body">
+              <div class="step-title">Run</div>
+              <div class="step-code">java -jar app.jar</div>
+              <div class="step-desc">JVM loads JAR, finds Main-Class, executes</div>
+            </div>
+          </div>
+        </div>
+        <div class="insight sre" style="margin-top:14px;">
+          <div class="insight-icon">🔥</div>
+          <div class="insight-body"><strong>This is why Java uses multi-stage.</strong> You need Maven to build the JAR, but you only need the JRE to run it. Maven is 300MB you don't need in prod.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- pom.xml explanation -->
+  <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);padding:28px;margin-top:20px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--red);margin-bottom:20px;">📄 What is pom.xml? — Deep Explanation</div>
+    <div class="compare-grid">
+      <div>
+        <div style="font-family:var(--sans);font-size:13px;color:var(--white);margin-bottom:12px;">pom.xml = Project Object Model</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;">
+          Think of it as the Java equivalent of <code style="color:var(--orange3)">package.json</code> for Node or <code style="color:var(--orange3)">requirements.txt</code> for Python — but more powerful. It defines <em>everything</em> about your Java project.
+        </div>
+        <div class="table-wrap">
+          <table class="comp-table">
+            <thead><tr><th>Language</th><th>Config File</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td class="blue">Node.js</td><td><code>package.json</code></td><td>Deps + scripts</td></tr>
+              <tr><td class="amber">Python</td><td><code>requirements.txt</code></td><td>Deps list</td></tr>
+              <tr><td class="red">Java</td><td><code>pom.xml</code></td><td>Deps + build + plugins + metadata</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="code-label">Key sections of pom.xml</div>
+        <div class="code-wrap red-border" style="font-size:11px;">
+<span class="out">&lt;groupId&gt;</span><span class="val">com.example</span><span class="out">&lt;/groupId&gt;</span>    <span class="comment">← package</span>
+<span class="out">&lt;artifactId&gt;</span><span class="val">docker-demo</span><span class="out">&lt;/artifactId&gt;</span> <span class="comment">← app name</span>
+<span class="out">&lt;version&gt;</span><span class="val">1.0</span><span class="out">&lt;/version&gt;</span>          <span class="comment">← version</span>
+<br>
+<span class="out">&lt;dependencies&gt;</span>    <span class="comment">← like npm deps</span>
+<span class="out">  &lt;dependency&gt;</span>
+<span class="out">    &lt;groupId&gt;</span><span class="val">org.springframework.boot</span><span class="out">&lt;/groupId&gt;</span>
+<span class="out">    &lt;artifactId&gt;</span><span class="val">spring-boot-starter-web</span><span class="out">&lt;/artifactId&gt;</span>
+<span class="out">  &lt;/dependency&gt;</span>
+<span class="out">&lt;/dependencies&gt;</span>
+<br>
+<span class="out">&lt;build&gt;&lt;plugins&gt;</span>  <span class="comment">← build tools</span>
+<span class="out" style="color:var(--green);">  spring-boot-maven-plugin  ← makes JAR executable</span>
+<span class="out">&lt;/plugins&gt;&lt;/build&gt;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAR explanation -->
+  <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--amber);padding:28px;margin-top:14px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--amber);margin-bottom:20px;">📦 What is a JAR file?</div>
+    <div class="compare-grid">
+      <div>
+        <div style="font-family:var(--sans);font-size:13px;color:var(--white);margin-bottom:12px;">JAR = Java Archive</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;">
+          A JAR is essentially a ZIP file that contains all your compiled Java classes, dependencies, and a metadata file called <code style="color:var(--orange3)">META-INF/MANIFEST.MF</code>. When you run <code style="color:var(--orange3)">java -jar app.jar</code>, the JVM reads the manifest to find the entry point class.
+        </div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;padding:12px 16px;background:rgba(255,184,48,0.06);border:1px solid rgba(255,184,48,0.2);">
+          🍱 <strong style="color:var(--amber);">Cooking analogy:</strong><br>
+          Node/Python: "Here are the raw ingredients (source files), cook as you go."<br>
+          Java: "Here's the pre-cooked meal in a box (JAR), just heat and serve."
+        </div>
+      </div>
+      <div>
+        <div class="code-label">Inside a JAR file</div>
+        <div class="code-wrap amber-border" style="font-size:11px;">
+<span class="out">app.jar (ZIP file containing:)</span>
+<span class="out">├── META-INF/</span>
+<span class="out" style="color:var(--green);">│   └── MANIFEST.MF          ← entry point</span>
+<span class="out">│       Main-Class: com.example.Application</span>
+<span class="out">├── com/example/</span>
+<span class="out" style="color:var(--blue);">│   └── Application.class    ← compiled code</span>
+<span class="out">├── org/springframework/</span>
+<span class="out" style="color:var(--text3);">│   └── ...                  ← Spring deps</span>
+<span class="out">└── application.properties   ← config</span>
+<br>
+<span class="comment"># Run it:</span>
+<span class="cmd">java</span> <span class="flag">-jar</span> <span class="val">app.jar</span>
+<span class="comment"># JVM reads MANIFEST → finds Main-Class → executes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:16px;">
+    <table class="comp-table">
+      <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+      <tbody>
+        <tr><td>Why Node/Python don't need compilation?</td><td class="green">They're interpreted — the runtime reads and executes source code directly, no intermediate binary needed.</td></tr>
+        <tr><td>What happens inside a JAR?</td><td class="amber">Compiled .class files + dependencies + MANIFEST.MF (entry point) — everything bundled as a ZIP.</td></tr>
+        <tr><td>Why Java needs Maven?</td><td class="blue">Java is a compiled language. Maven compiles .java → .class, resolves dependencies, and packages everything into a JAR.</td></tr>
+        <tr><td>Which step happens inside docker build vs run?</td><td class="orange">docker build = RUN instructions (install, compile). docker run = CMD (start application).</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════ -->
+<!-- S11: INSPECT + RMI -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <span class="section-num">11</span>
+    <span class="section-title">docker image inspect + docker rmi</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- INSPECT OVERVIEW -->
+  <div style="background:rgba(0,229,200,0.06);border:1px solid rgba(0,229,200,0.3);border-left:4px solid var(--teal);padding:22px 26px;margin-bottom:22px;">
+    <div style="font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:var(--teal);margin-bottom:12px;">🧠 What is docker image inspect?</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.8;">
+      Returns the <strong style="color:var(--teal);">full JSON metadata</strong> of an image — exposed ports, environment variables, default command, entrypoint, volumes, architecture, and more. Essential for understanding what an image will do before running it.
+    </div>
+  </div>
+
+  <div class="compare-grid gap-24">
+    <div>
+      <div class="code-label">3 Fields You Must Know</div>
+
+      <!-- ExposedPorts -->
+      <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--blue);padding:18px;margin-bottom:12px;">
+        <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--blue);margin-bottom:10px;">🔌 1. ExposedPorts</div>
+        <div class="code-wrap blue-border" style="font-size:11px;margin-bottom:10px;">
+<span class="cmd">docker image inspect</span> <span class="val">nginx</span> <span class="flag">| grep</span> <span class="val">-i ExposedPorts</span> <span class="flag">-A 5</span>
+<br>
+<span class="comment"># Output:</span>
+<span class="out">"ExposedPorts": {</span>
+<span class="out" style="color:var(--blue);">  "80/tcp": {}</span>
+<span class="out">}</span>
+        </div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">
+          Container listens on port 80 internally.<br>
+          <strong style="color:var(--red);">EXPOSE ≠ actually open port.</strong> You still need <code style="color:var(--orange3)">-p 80:80</code> at runtime.
+        </div>
+      </div>
+
+      <!-- Env -->
+      <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--amber);padding:18px;margin-bottom:12px;">
+        <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;">🌍 2. Env (Environment Variables)</div>
+        <div class="code-wrap amber-border" style="font-size:11px;margin-bottom:10px;">
+<span class="cmd">docker image inspect</span> <span class="val">nginx</span> <span class="flag">| grep</span> <span class="val">-i Env</span> <span class="flag">-A 10</span>
+<br>
+<span class="comment"># nginx output:</span>
+<span class="out">"Env": [</span>
+<span class="out" style="color:var(--amber);">  "PATH=/usr/local/sbin:...",</span>
+<span class="out" style="color:var(--amber);">  "NGINX_VERSION=1.25.x"</span>
+<span class="out">]</span>
+        </div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">
+          Default environment variables baked into the image. Used for config, runtime behavior, binary paths.
+        </div>
+      </div>
+
+      <!-- Cmd -->
+      <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);padding:18px;">
+        <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--green);margin-bottom:10px;">▶️ 3. Cmd (MOST IMPORTANT)</div>
+        <div class="code-wrap green-border" style="font-size:11px;margin-bottom:10px;">
+<span class="cmd">docker image inspect</span> <span class="val">nginx</span> <span class="flag">| grep</span> <span class="val">-i Cmd</span> <span class="flag">-A 5</span>
+<br>
+<span class="comment"># Output:</span>
+<span class="out">"Cmd": [</span>
+<span class="out" style="color:var(--green);">  "nginx",</span>
+<span class="out" style="color:var(--green);">  "-g",</span>
+<span class="out" style="color:var(--green);">  "daemon off;"</span>
+<span class="out">]</span>
+        </div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">
+          This is why <code style="color:var(--orange3)">docker run nginx</code> automatically starts nginx in foreground — the CMD is embedded in the image.
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <!-- MISTAKE YOU MADE -->
+      <div class="scenario" style="margin-bottom:16px;">
+        <div class="scenario-title">Debug — You Inspected the Wrong Image</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:12px;">
+          You ran <code style="color:var(--orange3)">docker image inspect</code> and got <code style="color:var(--red)">JAVA_HOME</code>, <code style="color:var(--red)">MAVEN_HOME</code> — that's the Java image, not nginx. Always confirm which image you're inspecting.
+        </div>
+        <div class="code-wrap red-border" style="font-size:11px;margin-bottom:10px;">
+<span class="comment"># ❌ You got (Java image):</span>
+<span class="out" style="color:var(--red);">"JAVA_HOME=/opt/java/openjdk"</span>
+<span class="out" style="color:var(--red);">"MAVEN_HOME=/usr/share/maven"</span>
+<br>
+<span class="comment"># ✅ nginx correct output:</span>
+<span class="out" style="color:var(--green);">"NGINX_VERSION=1.25.x"</span>
+        </div>
+        <div class="code-wrap teal-border" style="font-size:11px;">
+<span class="comment"># Clean way — grep specific fields at once:</span>
+<span class="cmd">docker image inspect</span> <span class="val">nginx</span> <span class="flag">| grep</span> <span class="flag">-E</span> <span class="val">"ExposedPorts|Cmd|Env"</span> <span class="flag">-A 5</span>
+        </div>
+      </div>
+
+      <!-- REAL SRE USE -->
+      <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--orange);padding:20px;margin-bottom:16px;">
+        <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--orange3);margin-bottom:14px;">🚨 Real SRE Use Cases for inspect</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text2);">
+            <span style="color:var(--red);">⚠️ Container not starting</span> → check Cmd field for wrong command
+          </div>
+          <div style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text2);">
+            <span style="color:var(--amber);">⚠️ App needs config</span> → check Env to see what vars the image expects
+          </div>
+          <div style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text2);">
+            <span style="color:var(--blue);">⚠️ Port confusion</span> → check ExposedPorts to know what port the app uses internally
+          </div>
+          <div style="padding:8px 12px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text2);">
+            <span style="color:var(--green);">✅ Validate unknown image</span> → inspect before running in production
+          </div>
+        </div>
+      </div>
+
+      <div class="interview-badge">💬 "docker image inspect provides metadata: exposed ports, env vars, CMD, entrypoint, architecture — critical for debugging containers before they run."</div>
+    </div>
+  </div>
+
+  <!-- RMI -->
+  <div style="margin-top:22px;background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);padding:28px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--red);margin-bottom:20px;">🗑️ docker rmi — Deleting Images</div>
+
+    <div class="compare-grid">
+      <div>
+        <div class="code-label">What Happens When You Try to Delete</div>
+        <div class="code-wrap red-border" style="font-size:11px;margin-bottom:14px;">
+<span class="cmd">docker rmi</span> <span class="val">nginx</span>
+<br>
+<span class="comment"># Error if container is using it:</span>
+<span class="out" style="color:var(--red);">Error response from daemon:</span>
+<span class="out" style="color:var(--red);">conflict: unable to remove repository reference "nginx"</span>
+<span class="out" style="color:var(--red);">(must force) - container 3a4b is using its referenced image</span>
+        </div>
+
+        <div class="code-label">Correct Fix — Remove Container First</div>
+        <div class="code-wrap green-border" style="font-size:11px;">
+<span class="comment"># Step 1: Stop running container</span>
+<span class="cmd">docker stop</span> <span class="val">&lt;container_id&gt;</span>
+<br>
+<span class="comment"># Step 2: Remove container</span>
+<span class="cmd">docker rm</span> <span class="val">&lt;container_id&gt;</span>
+<br>
+<span class="comment"># Step 3: Now remove image</span>
+<span class="cmd">docker rmi</span> <span class="val">nginx</span>
+<br>
+<span class="comment"># Force delete (use carefully)</span>
+<span class="cmd">docker rmi</span> <span class="flag">-f</span> <span class="val">nginx</span>
+        </div>
+      </div>
+
+      <div>
+        <!-- WHY VISUAL -->
+        <div style="background:var(--bg2);border:1px solid var(--border);padding:20px;margin-bottom:14px;">
+          <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;">Why Can't You Delete a Used Image?</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:0;font-size:11px;">
+            <div style="background:rgba(57,217,138,0.08);border:1px solid rgba(57,217,138,0.3);padding:10px 24px;color:var(--green);">📦 Image (nginx)</div>
+            <div style="color:var(--text3);font-size:18px;padding:4px;">↓</div>
+            <div style="color:var(--text3);font-size:10px;margin-bottom:4px;">depends on</div>
+            <div style="background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.3);padding:10px 24px;color:var(--blue);">🚀 Container (running)</div>
+            <div style="margin-top:12px;padding:8px 14px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.2);font-size:11px;color:var(--red);text-align:center;">
+              Cannot delete image while container exists
+            </div>
+          </div>
+        </div>
+
+        <!-- CLEANUP COMMANDS -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--amber);padding:18px;">
+          <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">🚨 SRE Disk Full — Nuclear Cleanup</div>
+          <div class="code-wrap amber-border" style="font-size:11px;">
+<span class="comment"># Remove ALL stopped containers</span>
+<span class="cmd">docker rm</span> <span class="val">$(docker ps -aq)</span>
+<br>
+<span class="comment"># Remove ALL images</span>
+<span class="cmd">docker rmi</span> <span class="val">$(docker images -q)</span>
+<br>
+<span class="comment"># Prune everything (images, containers, cache)</span>
+<span class="cmd">docker system prune</span> <span class="flag">-a</span>
+<br>
+<span class="comment"># Check disk usage</span>
+<span class="cmd">docker system df</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-wrap" style="margin-top:14px;">
+    <table class="comp-table">
+      <thead><tr><th>Field</th><th>What It Tells You</th><th>SRE Use Case</th></tr></thead>
+      <tbody>
+        <tr><td class="blue">ExposedPorts</td><td>Internal port the app listens on</td><td>Verify port before mapping with -p</td></tr>
+        <tr><td class="amber">Env</td><td>Default env vars baked into image</td><td>Debug missing configs, check versions</td></tr>
+        <tr><td class="green">Cmd</td><td>Default startup command</td><td>Understand why container starts/crashes</td></tr>
+        <tr><td class="orange">Entrypoint</td><td>Fixed executable (overrides CMD)</td><td>Debug containers that ignore CMD</td></tr>
+        <tr><td class="purple">Architecture</td><td>amd64 / arm64</td><td>Catch image/host arch mismatches</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- S12: CONTAINER MODES + EXEC + CP -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s12">
+  <div class="section-header">
+    <span class="section-num">12</span>
+    <span class="section-title">-d vs -it · exec · cp · --rm · STATS</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- -d vs -it -->
+  <div class="compare-grid gap-24">
+    <div class="compare-card teal">
+      <div class="card-label teal">🔹 -d Detached Mode</div>
+      <div class="card-title">Background</div>
+      <div class="code-wrap teal-border" style="font-size:11px;margin-bottom:12px;">
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">--name</span> <span class="val">nginx-d</span> <span class="flag">-p</span> <span class="val">8081:80</span> <span class="tag">nginx</span>
+<br>
+<span class="comment"># Verify it's running</span>
+<span class="cmd">docker ps</span>
+<span class="out">CONTAINER ID  STATUS     PORTS</span>
+<span class="out" style="color:var(--green);">abc123       Up 5s     0.0.0.0:8081->80/tcp</span>
+      </div>
+      <ul class="bullet-list teal-dot" style="font-size:11px;">
+        <li>Runs in background</li>
+        <li>Terminal returned immediately</li>
+        <li>Container ID printed</li>
+        <li>Logs via <code>docker logs</code></li>
+      </ul>
+      <div style="margin-top:12px;padding:7px 12px;background:rgba(0,229,200,0.07);border:1px solid rgba(0,229,200,0.2);font-size:10px;color:var(--teal);">✅ Use in production — servers, APIs, databases</div>
+    </div>
+
+    <div class="compare-card blue">
+      <div class="card-label blue">🔹 -it Interactive Mode</div>
+      <div class="card-title">Inside Shell</div>
+      <div class="code-wrap blue-border" style="font-size:11px;margin-bottom:12px;">
+<span class="cmd">docker run</span> <span class="flag">-it</span> <span class="flag">--name</span> <span class="val">nginx-it</span> <span class="tag">nginx bash</span>
+<br>
+<span class="comment"># Now you're inside the container:</span>
+<span class="out" style="color:var(--blue);">root@a1b2c3:/# ps aux</span>
+<span class="out">nginx: master process...</span>
+<span class="out" style="color:var(--text3);"># Ctrl+D or exit to leave</span>
+      </div>
+      <ul class="bullet-list blue-dot" style="font-size:11px;">
+        <li>-i = keep stdin open</li>
+        <li>-t = allocate pseudo-TTY</li>
+        <li>Combined = interactive shell</li>
+        <li>Container stops when you exit</li>
+      </ul>
+      <div style="margin-top:12px;padding:7px 12px;background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.2);font-size:10px;color:var(--blue);">✅ Use for debugging, exploring, testing</div>
+    </div>
+  </div>
+
+  <!-- Key difference table -->
+  <div class="table-wrap gap-20" style="margin-top:14px;">
+    <table class="comp-table">
+      <thead><tr><th>Flag</th><th>Container Behaviour</th><th>Terminal</th><th>Use Case</th></tr></thead>
+      <tbody>
+        <tr><td class="teal">-d</td><td>Runs in background</td><td class="green">Returns immediately</td><td>Production workloads, long-running services</td></tr>
+        <tr><td class="blue">-it</td><td>Interactive shell</td><td class="amber">Locked until exit</td><td>Debugging, exploring the container filesystem</td></tr>
+        <tr><td class="orange">-d + exec</td><td>Running in background</td><td class="green">Returns after exec</td><td>Enter a running container without stopping it</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DOCKER EXEC -->
+  <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--orange);padding:28px;margin-top:20px;margin-bottom:20px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--orange3);margin-bottom:18px;">⚡ docker exec — Enter Running Containers (VERY IMPORTANT)</div>
+
+    <div class="compare-grid">
+      <div>
+        <div class="code-label">Full Lab Sequence</div>
+        <div class="code-wrap">
+<span class="comment"># Container must be running first</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">--name</span> <span class="val">nginx-d</span> <span class="flag">-p</span> <span class="val">8081:80</span> <span class="tag">nginx</span>
+<br>
+<span class="comment"># Enter the running container</span>
+<span class="cmd">docker exec</span> <span class="flag">-it</span> <span class="val">nginx-d</span> <span class="tag">bash</span>
+<br>
+<span class="comment"># Inside container — modify nginx page</span>
+<span class="out">root@abc:/# cd /usr/share/nginx/html</span>
+<span class="out">root@abc:/# echo "Hello from SRE 🚀" &gt; index.html</span>
+<span class="out">root@abc:/# exit</span>
+<br>
+<span class="comment"># See your change in browser:</span>
+<span class="comment"># http://&lt;EC2-IP&gt;:8081</span>
+        </div>
+      </div>
+
+      <div>
+        <div style="background:var(--bg2);border:1px solid var(--border);padding:20px;margin-bottom:14px;">
+          <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;">docker run -it vs docker exec — KEY DIFFERENCE</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="padding:10px 14px;background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.2);">
+              <div style="font-size:10px;color:var(--blue);margin-bottom:4px;">docker run -it</div>
+              <div style="font-size:11px;color:var(--text2);">Creates a <strong style="color:var(--white)">new container</strong> and enters it. Container stops on exit.</div>
+            </div>
+            <div style="padding:10px 14px;background:rgba(255,107,26,0.07);border:1px solid rgba(255,107,26,0.2);">
+              <div style="font-size:10px;color:var(--orange3);margin-bottom:4px;">docker exec -it</div>
+              <div style="font-size:11px;color:var(--text2);">Enters an <strong style="color:var(--white)">already running container</strong>. Container keeps running on exit.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-label">Useful exec Commands</div>
+        <div class="code-wrap" style="font-size:11px;">
+<span class="comment"># Run single command without entering shell</span>
+<span class="cmd">docker exec</span> <span class="val">nginx-d</span> <span class="tag">cat /etc/nginx/nginx.conf</span>
+<br>
+<span class="comment"># Check processes inside container</span>
+<span class="cmd">docker exec</span> <span class="val">nginx-d</span> <span class="tag">ps aux</span>
+<br>
+<span class="comment"># Check env inside running container</span>
+<span class="cmd">docker exec</span> <span class="val">nginx-d</span> <span class="tag">env</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight sre" style="margin-top:14px;">
+      <div class="insight-icon">🚨</div>
+      <div class="insight-body">
+        <strong>SRE Production Use:</strong> In production, you never recreate a container to debug. You <code style="color:var(--orange3)">docker exec</code> into it, investigate logs/config/processes live, fix what you can, then exit. Container keeps serving traffic throughout.
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCKER CP -->
+  <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--purple);padding:28px;margin-bottom:20px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--purple);margin-bottom:18px;">📋 docker cp — Copy Files Between Host ↔ Container</div>
+
+    <div class="compare-grid">
+      <div>
+        <div class="code-label">Host → Container</div>
+        <div class="code-wrap purple-border" style="font-size:11px;margin-bottom:12px;">
+<span class="comment"># Create file on host</span>
+<span class="out">echo "Copied from host" &gt; test.txt</span>
+<br>
+<span class="comment"># Copy to container</span>
+<span class="cmd">docker cp</span> <span class="val">test.txt</span> <span class="tag">nginx-d:/usr/share/nginx/html/</span>
+<br>
+<span class="comment"># Verify inside container</span>
+<span class="cmd">docker exec</span> <span class="val">nginx-d</span> <span class="tag">ls /usr/share/nginx/html</span>
+<span class="out" style="color:var(--green);">index.html  test.txt</span>
+        </div>
+
+        <div class="code-label">Container → Host</div>
+        <div class="code-wrap purple-border" style="font-size:11px;">
+<span class="cmd">docker cp</span> <span class="tag">nginx-d:/usr/share/nginx/html/index.html</span> <span class="val">.</span>
+<span class="cmd">ls</span>
+<span class="out" style="color:var(--green);">index.html  ← pulled from container</span>
+        </div>
+      </div>
+
+      <div>
+        <div style="background:var(--bg2);border:1px solid var(--border);padding:18px;margin-bottom:12px;">
+          <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--purple);margin-bottom:12px;">Syntax Pattern</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
+            <div style="padding:9px 13px;background:var(--card);border:1px solid var(--border);color:var(--text2);">
+              <span style="color:var(--orange3);">docker cp</span> <span style="color:var(--green);">source</span> <span style="color:var(--blue);">destination</span>
+            </div>
+            <div style="padding:9px 13px;background:var(--card);border:1px solid var(--border);color:var(--text2);font-size:11px;">
+              Host→Container: <code style="color:var(--green)">localfile</code> <code style="color:var(--blue)">name:/path</code>
+            </div>
+            <div style="padding:9px 13px;background:var(--card);border:1px solid var(--border);color:var(--text2);font-size:11px;">
+              Container→Host: <code style="color:var(--blue)">name:/path</code> <code style="color:var(--green)">./localpath</code>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.25);padding:14px 18px;">
+          <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--purple);margin-bottom:8px;">🚨 Real SRE Uses for docker cp</div>
+          <ul class="bullet-list" style="font-size:11px;">
+            <li>Emergency config update without rebuild</li>
+            <li>Extract crash dump / log file from dead container</li>
+            <li>Inject a hotfix script into running container</li>
+            <li>Pull generated reports or artifacts from container</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- --rm FLAG -->
+  <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--green);padding:28px;margin-bottom:20px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--green);margin-bottom:18px;">🧹 --rm Flag — Auto-Cleanup</div>
+
+    <div class="compare-grid">
+      <div>
+        <div class="code-label">Without --rm (default)</div>
+        <div class="code-wrap red-border" style="font-size:11px;margin-bottom:12px;">
+<span class="cmd">docker run</span> <span class="tag">ubuntu</span> <span class="val">echo "temporary"</span>
+<br>
+<span class="cmd">docker ps</span> <span class="flag">-a</span>
+<span class="out" style="color:var(--red);">CONTAINER ID  STATUS</span>
+<span class="out" style="color:var(--red);">abc123        Exited (0)  ← still there!</span>
+<span class="out" style="color:var(--red);">def456        Exited (0)  ← accumulates</span>
+<span class="out" style="color:var(--red);">ghi789        Exited (0)  ← disk waste</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="code-label">With --rm (clean)</div>
+        <div class="code-wrap green-border" style="font-size:11px;margin-bottom:12px;">
+<span class="cmd">docker run</span> <span class="flag">--rm</span> <span class="tag">ubuntu</span> <span class="val">echo "temporary"</span>
+<span class="out">temporary</span>
+<br>
+<span class="cmd">docker ps</span> <span class="flag">-a</span>
+<span class="out" style="color:var(--green);"># Nothing — container auto-deleted ✅</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
+      <div style="padding:12px 16px;background:rgba(57,217,138,0.06);border:1px solid rgba(57,217,138,0.2);">
+        <div style="font-size:9px;color:var(--green);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">✅ CI/CD Pipelines</div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);">Run tests in container → container auto-removes → no cleanup script needed</div>
+      </div>
+      <div style="padding:12px 16px;background:rgba(57,217,138,0.06);border:1px solid rgba(57,217,138,0.2);">
+        <div style="font-size:9px;color:var(--green);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">✅ One-Off Tasks</div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);">Database migrations, script runners, batch jobs — run and vanish cleanly</div>
+      </div>
+      <div style="padding:12px 16px;background:rgba(57,217,138,0.06);border:1px solid rgba(57,217,138,0.2);">
+        <div style="font-size:9px;color:var(--green);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">✅ Disk Health</div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);">Prevents dead containers piling up and wasting disk on /var/lib/docker</div>
+      </div>
+      <div style="padding:12px 16px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);">
+        <div style="font-size:9px;color:var(--red);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">❌ Don't use for</div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);">Long-running services — container removed means you lose logs forever</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SRE CHALLENGES -->
+  <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);padding:28px;margin-bottom:20px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--red);margin-bottom:20px;">🚨 SRE Challenge 1 — Crash a Container (kill PID 1)</div>
+
+    <div class="compare-grid">
+      <div>
+        <div class="code-label">The Experiment</div>
+        <div class="code-wrap red-border" style="font-size:11px;">
+<span class="comment"># Run nginx</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">--name</span> <span class="val">crash-nginx</span> <span class="tag">nginx</span>
+<br>
+<span class="comment"># Enter container</span>
+<span class="cmd">docker exec</span> <span class="flag">-it</span> <span class="val">crash-nginx</span> <span class="tag">bash</span>
+<br>
+<span class="comment"># Inside: kill PID 1 (nginx master process)</span>
+<span class="out">root@abc:/# kill 1</span>
+<span class="out">root@abc:/# exit</span>
+<br>
+<span class="comment"># Check status</span>
+<span class="cmd">docker ps</span> <span class="flag">-a</span>
+<span class="out" style="color:var(--red);">crash-nginx  Exited (137) ← killed by signal</span>
+        </div>
+      </div>
+
+      <div>
+        <div style="background:var(--bg2);border:1px solid var(--border);padding:20px;">
+          <div style="font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--red);margin-bottom:14px;">What Just Happened?</div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num" style="color:var(--orange);">1</div>
+              <div class="step-body">
+                <div class="step-title">kill 1 sends SIGTERM to PID 1</div>
+                <div class="step-desc">nginx master process (PID 1 inside container) receives signal</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num" style="color:var(--orange);">2</div>
+              <div class="step-body">
+                <div class="step-title">PID 1 exits</div>
+                <div class="step-desc">The main process of the container terminates</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num" style="color:var(--red);">3</div>
+              <div class="step-body">
+                <div class="step-title">Container stops immediately</div>
+                <div class="step-desc">Container lifecycle = PID 1 lifecycle. PID 1 dead = container dead. Exit code 137 (killed by signal).</div>
+              </div>
+            </div>
+          </div>
+          <div class="insight sre" style="margin-top:12px;">
+            <div class="insight-icon">🧠</div>
+            <div class="insight-body"><strong>This proves it again:</strong> Container = process. Kill the process → kill the container. You've now proved the PID 1 rule from Day 1 with your own hands.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCKER STATS -->
+  <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--teal);padding:28px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--teal);margin-bottom:18px;">📊 SRE Challenge 2 — docker stats (Resource Monitor)</div>
+
+    <div class="compare-grid">
+      <div>
+        <div class="code-label">Command & Output</div>
+        <div class="code-wrap teal-border" style="font-size:11px;margin-bottom:14px;">
+<span class="cmd">docker stats</span>
+<br>
+<span class="out">CONTAINER ID  NAME         CPU %   MEM USAGE/LIMIT   MEM %   NET I/O</span>
+<span class="out">abc123        nginx-d      0.0%    3.4MB / 1.9GB     0.17%   856B / 0B</span>
+<span class="out">def456        python-app   1.2%    45MB / 1.9GB      2.3%    2.1kB / 1kB</span>
+<br>
+<span class="comment"># Non-streaming snapshot</span>
+<span class="cmd">docker stats</span> <span class="flag">--no-stream</span>
+<br>
+<span class="comment"># Specific container</span>
+<span class="cmd">docker stats</span> <span class="val">nginx-d</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="code-label">What Each Column Means</div>
+        <div class="table-wrap">
+          <table class="comp-table">
+            <thead><tr><th>Column</th><th>Meaning</th><th>SRE Alert When</th></tr></thead>
+            <tbody>
+              <tr><td class="orange">CPU %</td><td>Container's CPU usage</td><td class="red">> 80% sustained</td></tr>
+              <tr><td class="red">MEM USAGE</td><td>Memory currently used</td><td class="red">Growing continuously = leak</td></tr>
+              <tr><td class="amber">MEM LIMIT</td><td>Max memory allowed</td><td class="red">Near limit = OOMKill soon</td></tr>
+              <tr><td class="blue">NET I/O</td><td>Network bytes in/out</td><td class="amber">Unexpected spikes</td></tr>
+              <tr><td class="purple">BLOCK I/O</td><td>Disk read/write</td><td class="amber">High disk I/O = bottleneck</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="padding:9px 13px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.2);font-size:11px;color:var(--text2);">
+            <span style="color:var(--red);">🚨 Memory leak signal:</span> MEM USAGE slowly climbing — 45MB → 200MB → 800MB over time
+          </div>
+          <div style="padding:9px 13px;background:rgba(255,107,26,0.07);border:1px solid rgba(255,107,26,0.2);font-size:11px;color:var(--text2);">
+            <span style="color:var(--orange3);">🚨 CPU spike signal:</span> CPU% suddenly jumps to 100% → app stuck in loop or under attack
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINAL Q&A -->
+  <div style="margin-top:16px;background:var(--card);border:1px solid rgba(155,127,244,0.35);border-left:4px solid var(--purple);padding:24px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--purple);margin-bottom:16px;">🏆 Interview Q&A — Container Modes & Operations</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:6px;">Q. What happened when you ran kill 1 inside the container?</div>
+        <div style="padding:10px 14px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">
+          Sending kill 1 inside the container kills the nginx master process (PID 1). Since a container's lifecycle is tied to PID 1, the container immediately stopped with exit code 137 (killed by signal).
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:6px;">Q. Why is --rm useful in CI/CD?</div>
+        <div style="padding:10px 14px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">
+          CI/CD jobs are temporary — build, test, done. Without --rm, hundreds of exited containers pile up on the build host, consuming disk space. --rm ensures automatic cleanup after the job finishes, keeping the host clean without extra maintenance scripts.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:6px;">Q. Difference between docker exec and docker run -it?</div>
+        <div style="padding:10px 14px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">
+          docker run -it creates a new container and drops you into an interactive shell — the container stops when you exit. docker exec -it runs a command inside an already running container without affecting its lifecycle — the container keeps running after you exit.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:6px;">Q. How do you detect a memory leak in Docker?</div>
+        <div style="padding:10px 14px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">
+          I use docker stats to monitor MEM USAGE in real time. If the value keeps climbing without releasing, that's a memory leak. I also check docker inspect for OOMKilled: true and ExitCode: 137 as evidence of past OOM kills.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════ -->
+<!-- S10: TAKEAWAYS -->
+<!-- ═══════════════════════════════════ -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <span class="section-num">10</span>
+    <span class="section-title">FINAL SRE TAKEAWAYS — DAY 2</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="takeaway-grid gap-24">
+    <div class="takeaway">
+      <span class="takeaway-icon">📦</span>
+      <div class="takeaway-title">Layer = Instruction</div>
+      <div class="takeaway-body">Every Dockerfile instruction = 1 layer. 0B layers are metadata (CMD, ENV, LABEL). Only ADD/RUN/COPY add real size. Fewer heavy layers = smaller image.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">🚀</span>
+      <div class="takeaway-title">Stable Top, Changes Bottom</div>
+      <div class="takeaway-body">Rarely changing layers (base, deps) go to the top. Frequently changing (code) at the bottom. One layer change invalidates all below it — structure matters.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">🏗️</span>
+      <div class="takeaway-title">Multi-Stage = Lean Prod</div>
+      <div class="takeaway-body">Stage 1 builds, Stage 2 runs. Build tools never reach the final image. Java: 800MB → 200MB. React: 1GB → 30MB. Always use multi-stage in production.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">⚡</span>
+      <div class="takeaway-title">RUN vs CMD</div>
+      <div class="takeaway-body">RUN executes during build time (install, compile). CMD executes when container starts (run app). Mixing them up is the #1 beginner Docker mistake.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">☕</span>
+      <div class="takeaway-title">Java Needs Maven</div>
+      <div class="takeaway-body">Java is compiled. Source → bytecode → JAR. Maven is the build tool. @SpringBootApplication is mandatory for Spring apps. MANIFEST.MF must have Main-Class.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">🔍</span>
+      <div class="takeaway-title">Debug = docker logs first</div>
+      <div class="takeaway-body">Container exits → check logs. It might be an app bug (wrong annotation) or config issue (missing plugin) — not always infra. Logs tell the truth.</div>
+    </div>
+  </div>
+
+  <!-- Interview Q&A -->
+  <div style="background:var(--card);border:1px solid rgba(155,127,244,0.35);border-left:4px solid var(--purple);padding:26px;margin-top:24px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--purple);margin-bottom:20px;">🏆 Interview-Ready Answers — Day 2</div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:8px;">Q. "How do you optimize a Dockerfile?"</div>
+        <div style="padding:12px 16px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">
+          Use a minimal base image (alpine/slim), leverage layer caching by copying dependency files before source code, chain related RUN commands with &&, use .dockerignore, and use multi-stage builds to exclude build tools from the final image.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:8px;">Q. "Why is the node:latest image 1.13GB?"</div>
+        <div style="padding:12px 16px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">
+          node:latest is based on Debian and includes 12+ layers from multiple apt-get install commands, each creating a separate heavy layer — Debian base (~117MB), system packages (~588MB), Node.js runtime (~198MB), Yarn, and more.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:8px;">Q. "How do you write a Dockerfile for any application?"</div>
+        <div style="padding:12px 16px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">
+          I ask three questions: what is the runtime (node/python/java), what are the dependencies (package.json/requirements.txt/pom.xml), and what is the start command. Then: FROM runtime → WORKDIR → COPY dep file → RUN install → COPY code → CMD start. For production, wrap in multi-stage.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Completion -->
+  <div style="margin-top:22px;background:linear-gradient(135deg,rgba(0,229,200,0.07),rgba(57,217,138,0.05));border:1px solid rgba(0,229,200,0.3);padding:28px;text-align:center;">
+    <div style="font-size:32px;margin-bottom:8px;">🏁</div>
+    <div style="font-family:var(--display);font-size:28px;letter-spacing:0.06em;color:var(--white);margin-bottom:8px;">DAY 2 — COMPLETE</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.7;max-width:600px;margin:0 auto;">You pulled real images, read layers, understood caching, wrote Dockerfiles for all 3 languages, debugged real build failures, mastered multi-stage builds, inspected image metadata, and ran live SRE container challenges. Day 3 is Dockerfile mastery — optimized, production-grade Dockerfiles for interviews.</div>
+    <div style="margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <span class="chip green">✅ Image Sizes</span>
+      <span class="chip green">✅ Layer Caching</span>
+      <span class="chip green">✅ Multi-Stage</span>
+      <span class="chip green">✅ Node Dockerfile</span>
+      <span class="chip green">✅ Python Dockerfile</span>
+      <span class="chip green">✅ Java Dockerfile</span>
+      <span class="chip green">✅ JAR + pom.xml</span>
+      <span class="chip teal">✅ inspect + rmi</span>
+      <span class="chip blue">✅ exec · cp · --rm</span>
+      <span class="chip orange">✅ SRE Challenges</span>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /sections -->
+</div><!-- /page -->
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.07, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+const sections = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+const navObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.style.color = '');
+      const a = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+      if (a) a.style.color = 'var(--teal)';
+    }
+  });
+}, { threshold: 0.4 });
+sections.forEach(s => navObs.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker Mastery — 10 Day War Room</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0e;
+    --bg2: #0a1520;
+    --bg3: #0f1f2e;
+    --card: #0d1a26;
+    --border: #1a3a55;
+    --border2: #0f2a40;
+    --cyan: #00e5ff;
+    --cyan2: #00b8d4;
+    --green: #00ff88;
+    --green2: #00cc6a;
+    --amber: #ffb300;
+    --red: #ff4444;
+    --text: #c8e6f5;
+    --text2: #6b9ab8;
+    --text3: #3a6078;
+    --white: #eaf6ff;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SCAN LINE OVERLAY ── */
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,229,255,0.015) 2px,
+      rgba(0,229,255,0.015) 4px
+    );
+    pointer-events:none;
+    z-index:1000;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::after {
+    content:'';
+    position:fixed;
+    inset:0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .page-wrap { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:40px 24px 80px; }
+
+  /* ── HEADER ── */
+  .header {
+    text-align:center;
+    margin-bottom:56px;
+    position:relative;
+  }
+
+  .header-tag {
+    display:inline-block;
+    font-size:10px;
+    letter-spacing:0.25em;
+    color:var(--cyan);
+    text-transform:uppercase;
+    border:1px solid var(--cyan);
+    padding:4px 14px;
+    margin-bottom:20px;
+    position:relative;
+    overflow:hidden;
+  }
+  .header-tag::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    background:var(--cyan);
+    opacity:0.07;
+  }
+
+  h1 {
+    font-family:'Syne', sans-serif;
+    font-size:clamp(36px, 6vw, 68px);
+    font-weight:800;
+    line-height:1.05;
+    color:var(--white);
+    letter-spacing:-0.03em;
+    margin-bottom:6px;
+  }
+  h1 span { color:var(--cyan); }
+
+  .subtitle {
+    font-size:12px;
+    color:var(--text2);
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    margin-top:12px;
+  }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:16px;
+    margin-bottom:48px;
+  }
+  .stat {
+    background:var(--card);
+    border:1px solid var(--border);
+    padding:20px 20px 16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .stat::before {
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height:2px;
+    background:linear-gradient(90deg, transparent, var(--cyan), transparent);
+    opacity:0.6;
+  }
+  .stat-val {
+    font-family:'Syne', sans-serif;
+    font-size:38px;
+    font-weight:800;
+    color:var(--cyan);
+    line-height:1;
+    display:block;
+    margin-bottom:6px;
+  }
+  .stat-label {
+    font-size:10px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    color:var(--text3);
+  }
+
+  /* ── OVERALL PROGRESS BAR ── */
+  .overall-progress-wrap {
+    margin-bottom:48px;
+    background:var(--card);
+    border:1px solid var(--border);
+    padding:24px 28px;
+  }
+  .progress-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+  }
+  .progress-label {
+    font-size:11px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--text2);
+  }
+  .progress-pct {
+    font-family:'Syne', sans-serif;
+    font-size:22px;
+    font-weight:800;
+    color:var(--green);
+  }
+  .track {
+    height:8px;
+    background:var(--bg3);
+    position:relative;
+    overflow:hidden;
+  }
+  .track-fill {
+    height:100%;
+    background:linear-gradient(90deg, var(--cyan2), var(--green));
+    transition:width 0.6s cubic-bezier(0.4,0,0.2,1);
+    position:relative;
+  }
+  .track-fill::after {
+    content:'';
+    position:absolute;
+    top:0; right:0;
+    width:30px; height:100%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+    animation:shimmer 2s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0%,100%{opacity:0} 50%{opacity:1} }
+
+  /* ── DAY CARDS ── */
+  .days-grid {
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+  }
+
+  .day-card {
+    background:var(--card);
+    border:1px solid var(--border2);
+    transition:border-color 0.25s;
+    position:relative;
+    overflow:hidden;
+  }
+  .day-card.active { border-color:var(--cyan); }
+  .day-card.complete { border-color:var(--green2); }
+  .day-card.complete::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    background:rgba(0,255,136,0.02);
+    pointer-events:none;
+  }
+
+  .day-card-header {
+    display:flex;
+    align-items:center;
+    gap:0;
+    cursor:pointer;
+    padding:20px 24px;
+    user-select:none;
+  }
+
+  .day-num {
+    font-family:'Syne', sans-serif;
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--text3);
+    min-width:56px;
+  }
+
+  .day-title-wrap { flex:1; }
+  .day-title {
+    font-family:'Syne', sans-serif;
+    font-size:17px;
+    font-weight:700;
+    color:var(--white);
+    letter-spacing:-0.01em;
+  }
+  .day-subtitle {
+    font-size:10px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--text3);
+    margin-top:3px;
+  }
+
+  .day-meta {
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-left:auto;
+  }
+
+  .day-progress-ring {
+    position:relative;
+    width:44px;
+    height:44px;
+    flex-shrink:0;
+  }
+  .day-progress-ring svg { transform:rotate(-90deg); }
+  .ring-bg { stroke:var(--bg3); }
+  .ring-fill {
+    stroke:var(--cyan);
+    stroke-linecap:round;
+    transition:stroke-dashoffset 0.5s ease;
+  }
+  .ring-pct {
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:9px;
+    font-weight:700;
+    color:var(--cyan);
+  }
+  .day-card.complete .ring-fill { stroke:var(--green); }
+  .day-card.complete .ring-pct { color:var(--green); }
+
+  .chevron {
+    color:var(--text3);
+    transition:transform 0.3s;
+    font-size:18px;
+    margin-left:12px;
+  }
+  .day-card.open .chevron { transform:rotate(180deg); }
+
+  /* ── TASK BODY ── */
+  .day-body {
+    display:none;
+    padding:0 24px 24px;
+    border-top:1px solid var(--border2);
+  }
+  .day-card.open .day-body { display:block; }
+
+  .section-group { margin-top:20px; }
+  .section-title {
+    font-size:9px;
+    letter-spacing:0.25em;
+    text-transform:uppercase;
+    color:var(--cyan2);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .section-title::after {
+    content:'';
+    flex:1;
+    height:1px;
+    background:var(--border2);
+  }
+
+  .task-list { display:flex; flex-direction:column; gap:4px; }
+  .task {
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:9px 12px;
+    cursor:pointer;
+    transition:background 0.15s;
+    position:relative;
+  }
+  .task:hover { background:rgba(0,229,255,0.04); }
+
+  .task input[type=checkbox] { display:none; }
+
+  .checkmark {
+    width:16px;
+    height:16px;
+    border:1px solid var(--border);
+    flex-shrink:0;
+    margin-top:1px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all 0.2s;
+    position:relative;
+    overflow:hidden;
+  }
+  .task.done .checkmark {
+    background:var(--green);
+    border-color:var(--green);
+  }
+  .checkmark svg {
+    opacity:0;
+    transform:scale(0.5);
+    transition:all 0.2s;
+  }
+  .task.done .checkmark svg { opacity:1; transform:scale(1); }
+
+  .task-text {
+    font-size:13px;
+    color:var(--text);
+    line-height:1.5;
+    transition:color 0.2s;
+  }
+  .task.done .task-text {
+    color:var(--text3);
+    text-decoration:line-through;
+    text-decoration-color:var(--text3);
+  }
+
+  .task-badge {
+    margin-left:auto;
+    flex-shrink:0;
+    font-size:9px;
+    letter-spacing:0.1em;
+    padding:2px 8px;
+    border:1px solid;
+    text-transform:uppercase;
+  }
+  .badge-lab { color:var(--cyan); border-color:rgba(0,229,255,0.3); }
+  .badge-sre { color:var(--amber); border-color:rgba(255,179,0,0.3); }
+  .badge-proj { color:var(--green); border-color:rgba(0,255,136,0.3); }
+  .badge-debug { color:var(--red); border-color:rgba(255,68,68,0.3); }
+
+  /* ── STATUS BADGE ── */
+  .day-status {
+    font-size:9px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    padding:3px 10px;
+    border:1px solid;
+    margin-right:4px;
+  }
+  .status-todo { color:var(--text3); border-color:var(--text3); }
+  .status-wip { color:var(--amber); border-color:rgba(255,179,0,0.5); background:rgba(255,179,0,0.07); }
+  .status-done { color:var(--green); border-color:rgba(0,255,136,0.5); background:rgba(0,255,136,0.06); }
+
+  /* ── RESET BUTTON ── */
+  .footer-bar {
+    margin-top:48px;
+    display:flex;
+    justify-content:center;
+    gap:16px;
+  }
+  .btn {
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    padding:10px 24px;
+    cursor:pointer;
+    border:1px solid var(--border);
+    background:transparent;
+    color:var(--text2);
+    transition:all 0.2s;
+  }
+  .btn:hover { border-color:var(--cyan); color:var(--cyan); background:rgba(0,229,255,0.04); }
+  .btn-danger:hover { border-color:var(--red); color:var(--red); background:rgba(255,68,68,0.04); }
+
+  /* ── MOTIVATIONAL STRIP ── */
+  .motive-strip {
+    border:1px solid var(--border2);
+    padding:16px 24px;
+    margin-bottom:36px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+    background:linear-gradient(135deg, rgba(0,229,255,0.04), transparent);
+    overflow:hidden;
+    position:relative;
+  }
+  .motive-strip::before {
+    content:'';
+    position:absolute;
+    left:0; top:0; bottom:0;
+    width:3px;
+    background:linear-gradient(180deg, var(--cyan), var(--green));
+  }
+  .motive-icon { font-size:22px; flex-shrink:0; }
+  .motive-text { font-size:12px; color:var(--text2); line-height:1.6; }
+  .motive-text strong { color:var(--cyan); }
+
+  @media (max-width:600px) {
+    .stats-bar { grid-template-columns:repeat(2,1fr); }
+    h1 { font-size:32px; }
+    .day-card-header { padding:16px; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-tag">🐳 Production Mastery Track</div>
+    <h1>Docker <span>War Room</span></h1>
+    <div class="subtitle">10 Days · Learn + Break + Debug + Deploy · SRE-Level</div>
+  </div>
+
+  <!-- MOTIVE STRIP -->
+  <div class="motive-strip" id="motiveStrip">
+    <div class="motive-icon">⚡</div>
+    <div class="motive-text">
+      <strong>Starting the mission.</strong> You already know AWS &amp; infra — now we weaponize Docker. Skip theory, straight to production failures. Every day: learn something, break something, fix something.
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-val" id="statDays">0</span>
+      <span class="stat-label">Days Complete</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val" id="statTasks">0</span>
+      <span class="stat-label">Tasks Done</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val" id="statTotal">0</span>
+      <span class="stat-label">Total Tasks</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val" id="statStreak">0</span>
+      <span class="stat-label">Day Streak</span>
+    </div>
+  </div>
+
+  <!-- OVERALL PROGRESS -->
+  <div class="overall-progress-wrap">
+    <div class="progress-header">
+      <div class="progress-label">Overall Completion</div>
+      <div class="progress-pct" id="overallPct">0%</div>
+    </div>
+    <div class="track">
+      <div class="track-fill" id="overallBar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- DAYS -->
+  <div class="days-grid" id="daysGrid"></div>
+
+  <div class="footer-bar">
+    <button class="btn" onclick="expandAll()">[ Expand All ]</button>
+    <button class="btn" onclick="collapseAll()">[ Collapse All ]</button>
+    <button class="btn btn-danger" onclick="resetProgress()">[ Reset Progress ]</button>
+  </div>
+
+</div>
+
+<script>
+const DAYS = [
+  {
+    id: 1,
+    title: "Docker Internals & Architecture",
+    subtitle: "Core Concepts + Architecture + Lifecycle",
+    color: "cyan",
+    sections: [
+      {
+        name: "Concepts",
+        tasks: [
+          { text: "Microservices vs Monolith — draw the difference on paper", badge: "" },
+          { text: "Understand Virtualization vs Containerization (NOT reading — watch 1 diagram)", badge: "" },
+          { text: "Install Docker & verify: docker version, docker info", badge: "lab" },
+          { text: "Understand Docker Daemon, Docker Client, Docker Hub", badge: "" },
+        ]
+      },
+      {
+        name: "Hands-On",
+        tasks: [
+          { text: "Run: docker run hello-world — trace exactly what happened (daemon → registry → image → container)", badge: "lab" },
+          { text: "Run nginx container, open browser, kill it — document each step", badge: "lab" },
+          { text: "List containers: docker ps, docker ps -a — explain the difference", badge: "lab" },
+          { text: "STOP vs KILL — run container, try both, observe SIGTERM vs SIGKILL", badge: "debug" },
+        ]
+      },
+      {
+        name: "SRE Challenge",
+        tasks: [
+          { text: "Simulate: run a container, it 'crashes' — use docker logs <id> to debug why", badge: "sre" },
+          { text: "Find a container's PID on host using docker inspect | grep Pid", badge: "sre" },
+        ]
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: "Images & Container Deep Dive",
+    subtitle: "Image Layers + Exec + Lifecycle Commands",
+    sections: [
+      {
+        name: "Images",
+        tasks: [
+          { text: "Pull ubuntu, alpine, node:18-alpine — compare sizes with docker images", badge: "lab" },
+          { text: "Inspect layers: docker history nginx — count layers, understand why", badge: "lab" },
+          { text: "docker image inspect nginx — find ExposedPorts, Env, Cmd fields", badge: "" },
+          { text: "Delete images: docker rmi — understand what 'image in use' error means", badge: "debug" },
+        ]
+      },
+      {
+        name: "Containers",
+        tasks: [
+          { text: "Run container in detached mode (-d), interactive (-it), and both — know when to use each", badge: "lab" },
+          { text: "docker exec -it <container> bash — get inside running nginx, modify index.html", badge: "lab" },
+          { text: "docker cp — copy file from host to container and back", badge: "lab" },
+          { text: "docker run --rm — understand why this matters in production (cleanup)", badge: "" },
+        ]
+      },
+      {
+        name: "SRE Challenge",
+        tasks: [
+          { text: "Run container, exec inside, manually crash it (kill 1) — observe restart behaviour", badge: "sre" },
+          { text: "Use docker stats — identify CPU % and memory for a running container", badge: "sre" },
+        ]
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: "Dockerfile Mastery — Part 1",
+    subtitle: "Python + Node Dockerfiles + Layer Caching",
+    sections: [
+      {
+        name: "Fundamentals",
+        tasks: [
+          { text: "Write Dockerfile for a simple Python Flask app (FROM, WORKDIR, COPY, RUN, EXPOSE, CMD)", badge: "lab" },
+          { text: "Build it: docker build -t myapp:v1 . — read every layer line", badge: "lab" },
+          { text: "Understand layer caching — modify app.py, rebuild, see which layers are reused", badge: "" },
+          { text: "RUN vs CMD vs ENTRYPOINT — write 3 test Dockerfiles proving the difference", badge: "lab" },
+        ]
+      },
+      {
+        name: "Optimization",
+        tasks: [
+          { text: "ADD vs COPY — when does ADD extract? Test with a tar file", badge: "lab" },
+          { text: "Write Node.js Dockerfile — copy package.json FIRST (cache dependencies)", badge: "lab" },
+          { text: "Use .dockerignore — add node_modules, .git, .env — rebuild and compare speed", badge: "" },
+          { text: "Reduce Python image: FROM python:3.11 vs FROM python:3.11-slim vs FROM python:3.11-alpine — compare sizes", badge: "lab" },
+        ]
+      },
+      {
+        name: "SRE Challenge",
+        tasks: [
+          { text: "Deliberately break the Dockerfile (wrong WORKDIR path) — read the error, fix it", badge: "debug" },
+          { text: "Add HEALTHCHECK to your Dockerfile — verify with docker inspect", badge: "sre" },
+        ]
+      }
+    ]
+  },
+  {
+    id: 4,
+    title: "Dockerfile Mastery — Part 2",
+    subtitle: "Multi-Stage Builds + Java + Production Patterns",
+    sections: [
+      {
+        name: "Multi-Stage Builds",
+        tasks: [
+          { text: "Understand why multi-stage builds exist — builder vs runner separation", badge: "" },
+          { text: "Write multi-stage Dockerfile for Java Spring Boot (build stage: maven, run stage: JRE slim)", badge: "lab" },
+          { text: "Compare final image sizes: single-stage vs multi-stage — should be 60-80% smaller", badge: "lab" },
+          { text: "Write multi-stage for Node.js (build with node:18, run with node:18-alpine)", badge: "lab" },
+        ]
+      },
+      {
+        name: "Production Patterns",
+        tasks: [
+          { text: "Use ARG and ENV — pass build args, understand scope differences", badge: "lab" },
+          { text: "Non-root user in Dockerfile — add USER 1001 and test the container", badge: "" },
+          { text: "Pin base image versions (no :latest) — why this matters in CI/CD", badge: "" },
+          { text: "Label best practices: add MAINTAINER, version, description labels", badge: "" },
+        ]
+      },
+      {
+        name: "Project",
+        tasks: [
+          { text: "Containerize a real open-source app (e.g. Gitea or Nocodb) from scratch without their official Dockerfile", badge: "proj" },
+          { text: "Document your Dockerfile decisions — write a short README explaining each line", badge: "proj" },
+        ]
+      }
+    ]
+  },
+  {
+    id: 5,
+    title: "Volumes & Storage",
+    subtitle: "Persistence + Bind Mounts + Stateful Containers",
+    sections: [
+      {
+        name: "Volumes",
+        tasks: [
+          { text: "Named volume: docker volume create mydata — attach to container, write files, verify persistence", badge: "lab" },
+          { text: "Bind mount: mount local dir into container — edit file on host, see change inside", badge: "lab" },
+          { text: "tmpfs mount — run container with --tmpfs, verify data is gone after stop", badge: "lab" },
+          { text: "Volume in Dockerfile with VOLUME instruction — understand anonymous vs named", badge: "" },
+        ]
+      },
+      {
+        name: "Real Scenarios",
+        tasks: [
+          { text: "Run PostgreSQL with named volume — stop, rm container, start new one — data survives", badge: "lab" },
+          { text: "Container-to-container volume sharing: two containers sharing same volume (--volumes-from)", badge: "lab" },
+          { text: "Inspect volume details: docker volume inspect — find Mountpoint on host", badge: "" },
+        ]
+      },
+      {
+        name: "SRE Challenge",
+        tasks: [
+          { text: "Simulate data loss scenario: postgres without volume → container dies → all data gone", badge: "sre" },
+          { text: "Fix it: redo with named volume — prove data survived restart", badge: "debug" },
+          { text: "Volume backup strategy: docker run --rm -v mydata:/data -v $(pwd):/backup ubuntu tar", badge: "sre" },
+        ]
+      }
+    ]
+  },
+  {
+    id: 6,
+    title: "Docker Networking",
+    subtitle: "Networks + Port Mapping + Container Communication",
+    sections: [
+      {
+        name: "Fundamentals",
+        tasks: [
+          { text: "List default networks: docker network ls — bridge, host, none — explain each", badge: "" },
+          { text: "Port mapping: -p 8080:80 — verify with curl localhost:8080", badge: "lab" },
+          { text: "Create custom bridge network — run two containers on it — ping each other by name", badge: "lab" },
+          { text: "Host network mode: docker run --network=host nginx — why this is risky in production", badge: "" },
+        ]
+      },
+      {
+        name: "Container Communication",
+        tasks: [
+          { text: "Run Flask app + Redis on same network — app connects to redis by container name", badge: "lab" },
+          { text: "Run same setup without custom network — watch it fail, understand why", badge: "debug" },
+          { text: "docker network inspect — find subnet, gateway, container IPs", badge: "" },
+          { text: "Expose vs Publish: understand EXPOSE in Dockerfile vs -p at runtime", badge: "" },
+        ]
+      },
+      {
+        name: "SRE Challenge",
+        tasks: [
+          { text: "Port conflict: try to run two containers on same host port — read the error, fix it", badge: "debug" },
+          { text: "Container can't reach internet — debug it (check bridge, iptables, docker0 interface)", badge: "sre" },
+          { text: "Use docker network connect to add running container to another network", badge: "sre" },
+        ]
+      }
+    ]
+  },
+  {
+    id: 7,
+    title: "Docker Compose + Microservices",
+    subtitle: "Multi-Service Apps + Scaling + Production Compose",
+    sections: [
+      {
+        name: "Compose Basics",
+        tasks: [
+          { text: "Install Docker Compose v2 — verify: docker compose version", badge: "lab" },
+          { text: "Write single-service compose.yaml for nginx — docker compose up -d", badge: "lab" },
+          { text: "Write multi-service: Flask app + PostgreSQL + Redis — wire all three", badge: "lab" },
+          { text: "Understand depends_on — why it's NOT enough for readiness (only starts, doesn't wait)", badge: "" },
+        ]
+      },
+      {
+        name: "Production Patterns",
+        tasks: [
+          { text: "Use .env file for secrets — reference in compose with ${VAR} syntax", badge: "lab" },
+          { text: "Override file: docker-compose.override.yml for local dev vs prod", badge: "" },
+          { text: "docker compose scale web=3 — understand stateless requirement for this", badge: "lab" },
+          { text: "Compose healthcheck + restart: unless-stopped — test with manual container kill", badge: "sre" },
+        ]
+      },
+      {
+        name: "Project",
+        tasks: [
+          { text: "Build: Voting App (vote service + redis + worker + postgres + result service) — full microservices", badge: "proj" },
+          { text: "Add resource limits (mem_limit, cpus) to each service in compose", badge: "proj" },
+        ]
+      }
+    ]
+  },
+  {
+    id: 8,
+    title: "SRE War Games — Debugging Production",
+    subtitle: "Crash Loops + OOM + Logs + Incidents",
+    sections: [
+      {
+        name: "Incident Scenarios",
+        tasks: [
+          { text: "CrashLoopBackOff: intentionally bad ENTRYPOINT — debug with docker logs, docker inspect State", badge: "sre" },
+          { text: "OOMKilled: set --memory=10m on a memory-hungry container — observe kill, fix limits", badge: "sre" },
+          { text: "Container exits 137 (OOM) vs 1 (app error) vs 0 (clean) — memorize exit codes", badge: "" },
+          { text: "Restart policy: none/on-failure/unless-stopped/always — test each scenario", badge: "lab" },
+        ]
+      },
+      {
+        name: "Logging & Monitoring",
+        tasks: [
+          { text: "docker logs --tail 50 --follow <id> — live tail production logs", badge: "lab" },
+          { text: "Log drivers: json-file vs syslog vs fluentd — configure json-file with max-size", badge: "" },
+          { text: "docker stats --no-stream — capture resource snapshot, understand CPU throttling", badge: "lab" },
+          { text: "docker events — watch real-time container lifecycle events in a terminal", badge: "sre" },
+        ]
+      },
+      {
+        name: "Advanced Debugging",
+        tasks: [
+          { text: "Container won't start (port already bound) — find the offending process with lsof/ss, kill it", badge: "debug" },
+          { text: "Permission denied inside container — fix with correct USER or volume chmod", badge: "debug" },
+          { text: "Image won't build (network issue in RUN layer) — use --network=host in build", badge: "debug" },
+          { text: "FINAL: Write a 1-page incident report for one of the above (format: what happened / root cause / fix / prevention)", badge: "sre" },
+        ]
+      }
+    ]
+  },
+  {
+    id: 9,
+    title: "Registry + AWS ECS Deployment",
+    subtitle: "Docker Hub + ECR + ECS Tasks & Services",
+    sections: [
+      {
+        name: "Registry",
+        tasks: [
+          { text: "Create Docker Hub account — push your Day 4 app image: docker tag + docker push", badge: "lab" },
+          { text: "Pull your image on a fresh machine (or EC2) — verify it runs", badge: "lab" },
+          { text: "Tag strategy: :latest vs :v1.0.0 vs :git-sha — understand why :latest is dangerous", badge: "" },
+          { text: "Create AWS ECR repo — docker login to ECR, push image to private registry", badge: "lab" },
+        ]
+      },
+      {
+        name: "ECS Deployment",
+        tasks: [
+          { text: "Create ECS Task Definition for your app (CPU, memory, image, port mapping)", badge: "lab" },
+          { text: "Run as ECS Service with ALB (Application Load Balancer) — map port 80", badge: "lab" },
+          { text: "Scale ECS service to 2 tasks — verify load balancer distributes traffic", badge: "lab" },
+          { text: "Update ECS service with new image version — understand blue/green deployment", badge: "" },
+        ]
+      },
+      {
+        name: "SRE Challenge",
+        tasks: [
+          { text: "ECS task keeps stopping — debug via CloudWatch Logs, fix the root cause", badge: "sre" },
+          { text: "Set up ECS container health check — task marked unhealthy, understand the flow", badge: "sre" },
+        ]
+      }
+    ]
+  },
+  {
+    id: 10,
+    title: "Final Project + CI/CD Pipeline",
+    subtitle: "Full Microservices + Jenkins + Production Deploy",
+    sections: [
+      {
+        name: "Jenkins in Docker",
+        tasks: [
+          { text: "Run Jenkins in Docker with volume for persistence + Docker socket mounted", badge: "lab" },
+          { text: "Install Docker pipeline plugin — configure first freestyle job", badge: "lab" },
+          { text: "Create Jenkinsfile: clone repo → docker build → docker push → notify", badge: "lab" },
+        ]
+      },
+      {
+        name: "Final Project",
+        tasks: [
+          { text: "Full microservices system: API Gateway + 2 backend services + PostgreSQL + Redis", badge: "proj" },
+          { text: "Write production-grade Dockerfile for each service (multi-stage, non-root, healthcheck)", badge: "proj" },
+          { text: "Docker Compose for local dev with .env, resource limits, restart policies", badge: "proj" },
+          { text: "CI/CD: Jenkins pipeline builds, tests, pushes to ECR, deploys to ECS", badge: "proj" },
+        ]
+      },
+      {
+        name: "Interview Prep",
+        tasks: [
+          { text: "Write answers to top 10 Docker SRE interview questions (use your hands-on experience)", badge: "" },
+          { text: "COPY vs ADD, CMD vs ENTRYPOINT, EXPOSE vs -p, volumes vs bind mounts — one-liner each", badge: "" },
+          { text: "Explain: how would you debug a container that OOMKilled in production at 3am?", badge: "sre" },
+          { text: "🎯 DONE. You are production-ready. Push your entire project to GitHub.", badge: "proj" },
+        ]
+      }
+    ]
+  }
+];
+
+const MOTIVES = [
+  { emoji: "⚡", text: `<strong>Starting the mission.</strong> You know AWS & infra — now we weaponize Docker. Skip theory, straight to production failures.` },
+  { emoji: "🔥", text: `<strong>Great start.</strong> You're past theory now. Every command you run is building muscle memory. Keep going.` },
+  { emoji: "🚀", text: `<strong>Dockerfiles are your superpower.</strong> When you can write a production Dockerfile blindfolded, you're ahead of 80% of engineers.` },
+  { emoji: "⚙️", text: `<strong>Multi-stage mastery unlocked.</strong> Your images are lean and mean. Production engineers think in layers — you're one of them now.` },
+  { emoji: "💾", text: `<strong>Halfway there.</strong> Stateless vs stateful — this distinction separates juniors from SREs. You've felt both now.` },
+  { emoji: "🌐", text: `<strong>Networking is where most engineers give up.</strong> You didn't. Every container communication you debug makes you more dangerous.` },
+  { emoji: "🧩", text: `<strong>Compose is your orchestration superpower.</strong> You can now describe an entire system in YAML. That's real infrastructure thinking.` },
+  { emoji: "🚨", text: `<strong>SRE War Games day.</strong> This is what separates the interviewed from the hired. Break things. Fix them. Document it.` },
+  { emoji: "☁️", text: `<strong>Cloud deployment unlocked.</strong> You can push images and run them in AWS. That's a deployable system. That's real.` },
+  { emoji: "🏆", text: `<strong>Final day. You made it.</strong> You can now debug production outages, write optimized Dockerfiles, and talk like an SRE. Ship it.` },
+];
+
+// ── STORAGE ──
+function getState() {
+  try { return JSON.parse(localStorage.getItem('dockerTracker') || '{}'); } catch { return {}; }
+}
+function saveState(s) { localStorage.setItem('dockerTracker', JSON.stringify(s)); }
+
+// ── RENDER ──
+function buildCards() {
+  const state = getState();
+  const grid = document.getElementById('daysGrid');
+  grid.innerHTML = '';
+
+  DAYS.forEach(day => {
+    const allTasks = day.sections.flatMap(s => s.tasks);
+    const total = allTasks.length;
+    const doneTasks = allTasks.filter((_, i) => state[`d${day.id}_t${i}`]).length;
+    const pct = total ? Math.round(doneTasks / total * 100) : 0;
+    const isComplete = pct === 100;
+    const isActive = pct > 0 && !isComplete;
+    const isOpen = state[`d${day.id}_open`];
+
+    const statusText = isComplete ? 'done' : isActive ? 'wip' : 'todo';
+    const statusLabel = isComplete ? 'Complete' : isActive ? 'In Progress' : 'Not Started';
+
+    const card = document.createElement('div');
+    card.className = `day-card${isComplete ? ' complete' : isActive ? ' active' : ''}${isOpen ? ' open' : ''}`;
+    card.id = `day${day.id}`;
+
+    // Ring SVG
+    const r = 18, circ = 2 * Math.PI * r;
+    const dashOff = circ - (pct / 100 * circ);
+
+    // Build task rows
+    let bodyHtml = '';
+    let taskIdx = 0;
+    day.sections.forEach(sec => {
+      bodyHtml += `<div class="section-group"><div class="section-title">${sec.name}</div><div class="task-list">`;
+      sec.tasks.forEach(t => {
+        const done = state[`d${day.id}_t${taskIdx}`];
+        const badge = t.badge ? `<span class="task-badge badge-${t.badge}">${t.badge}</span>` : '';
+        bodyHtml += `
+          <label class="task${done ? ' done' : ''}" data-day="${day.id}" data-task="${taskIdx}">
+            <input type="checkbox" ${done ? 'checked' : ''}>
+            <div class="checkmark">
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                <path d="M1 4L3.5 6.5L9 1" stroke="#050a0e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="task-text">${t.text}</span>
+            ${badge}
+          </label>`;
+        taskIdx++;
+      });
+      bodyHtml += `</div></div>`;
+    });
+
+    card.innerHTML = `
+      <div class="day-card-header" data-day="${day.id}">
+        <div class="day-num">Day ${day.id}</div>
+        <div class="day-title-wrap">
+          <div class="day-title">${day.title}</div>
+          <div class="day-subtitle">${day.subtitle}</div>
+        </div>
+        <div class="day-meta">
+          <span class="day-status status-${statusText}">${statusLabel}</span>
+          <div class="day-progress-ring">
+            <svg width="44" height="44" viewBox="0 0 44 44">
+              <circle class="ring-bg" cx="22" cy="22" r="${r}" fill="none" stroke-width="3"/>
+              <circle class="ring-fill" cx="22" cy="22" r="${r}" fill="none" stroke-width="3"
+                stroke-dasharray="${circ}" stroke-dashoffset="${dashOff}"/>
+            </svg>
+            <div class="ring-pct">${pct}%</div>
+          </div>
+          <span class="chevron">▾</span>
+        </div>
+      </div>
+      <div class="day-body">${bodyHtml}</div>`;
+
+    grid.appendChild(card);
+  });
+
+  // Event: toggle open
+  document.querySelectorAll('.day-card-header').forEach(h => {
+    h.addEventListener('click', () => {
+      const dayId = +h.dataset.day;
+      const state = getState();
+      state[`d${dayId}_open`] = !state[`d${dayId}_open`];
+      saveState(state);
+      buildCards();
+      updateStats();
+    });
+  });
+
+  // Event: toggle task
+  document.querySelectorAll('.task').forEach(label => {
+    label.addEventListener('click', e => {
+      e.stopPropagation();
+      const dayId = +label.dataset.day;
+      const taskId = +label.dataset.task;
+      const state = getState();
+      state[`d${dayId}_t${taskId}`] = !state[`d${dayId}_t${taskId}`];
+      saveState(state);
+      buildCards();
+      updateStats();
+    });
+  });
+}
+
+function updateStats() {
+  const state = getState();
+  let totalTasks = 0, doneTasks = 0, completeDays = 0;
+
+  DAYS.forEach(day => {
+    const allTasks = day.sections.flatMap(s => s.tasks);
+    totalTasks += allTasks.length;
+    const dayDone = allTasks.filter((_, i) => state[`d${day.id}_t${i}`]).length;
+    doneTasks += dayDone;
+    if (dayDone === allTasks.length) completeDays++;
+  });
+
+  const pct = totalTasks ? Math.round(doneTasks / totalTasks * 100) : 0;
+
+  document.getElementById('statDays').textContent = completeDays;
+  document.getElementById('statTasks').textContent = doneTasks;
+  document.getElementById('statTotal').textContent = totalTasks;
+  document.getElementById('overallPct').textContent = pct + '%';
+  document.getElementById('overallBar').style.width = pct + '%';
+
+  // Streak: consecutive complete days from day 1
+  let streak = 0;
+  for (let i = 0; i < DAYS.length; i++) {
+    const day = DAYS[i];
+    const allTasks = day.sections.flatMap(s => s.tasks);
+    const done = allTasks.filter((_, j) => state[`d${day.id}_t${j}`]).length;
+    if (done === allTasks.length) streak++;
+    else break;
+  }
+  document.getElementById('statStreak').textContent = streak;
+
+  // Update motive strip
+  const motiveIdx = Math.min(completeDays, MOTIVES.length - 1);
+  const m = MOTIVES[motiveIdx];
+  document.getElementById('motiveStrip').innerHTML = `
+    <div class="motive-icon">${m.emoji}</div>
+    <div class="motive-text">${m.text}</div>`;
+}
+
+function expandAll() {
+  const s = getState();
+  DAYS.forEach(d => s[`d${d.id}_open`] = true);
+  saveState(s); buildCards(); updateStats();
+}
+function collapseAll() {
+  const s = getState();
+  DAYS.forEach(d => s[`d${d.id}_open`] = false);
+  saveState(s); buildCards(); updateStats();
+}
+function resetProgress() {
+  if (confirm('Reset ALL progress? This cannot be undone.')) {
+    localStorage.removeItem('dockerTracker');
+    buildCards(); updateStats();
+  }
+}
+
+buildCards();
+updateStats();
+</script>
+</body>
+</html>

@@ -1,0 +1,2221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 1 — Docker SRE Fundamentals</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #07080c;
+  --bg2:      #0d0f15;
+  --bg3:      #12151e;
+  --card:     #0e1018;
+  --border:   #1e2333;
+  --border2:  #262c40;
+  --orange:   #ff6b1a;
+  --orange2:  #e05a10;
+  --orange3:  #ff9a5c;
+  --amber:    #ffb830;
+  --green:    #39d98a;
+  --green2:   #1fa65c;
+  --red:      #ff4757;
+  --blue:     #4a9eff;
+  --purple:   #9b7ff4;
+  --text:     #c4cbe0;
+  --text2:    #6b748a;
+  --text3:    #3a4055;
+  --white:    #f0f3ff;
+  --mono:     'IBM Plex Mono', monospace;
+  --sans:     'IBM Plex Sans', sans-serif;
+  --display:  'Bebas Neue', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* ── CIRCUIT BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(255,107,26,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(74,158,255,0.03) 0%, transparent 50%),
+    linear-gradient(rgba(255,107,26,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,107,26,0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── LAYOUT ── */
+.page { position: relative; z-index: 1; }
+
+/* ── TOP NAV ── */
+.topnav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(7,8,12,0.92);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex; align-items: center; gap: 0;
+  height: 52px;
+  overflow-x: auto;
+}
+.nav-brand {
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  color: var(--orange);
+  margin-right: 32px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-links { display: flex; gap: 4px; flex-shrink: 0; }
+.nav-link {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text2);
+  padding: 6px 12px;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.nav-link:hover { color: var(--orange); border-color: rgba(255,107,26,0.3); background: rgba(255,107,26,0.04); }
+
+/* ── HERO ── */
+.hero {
+  padding: 72px 48px 56px;
+  max-width: 1200px; margin: 0 auto;
+  position: relative;
+}
+.hero-eyebrow {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px;
+}
+.hero-tag {
+  font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--orange); border: 1px solid rgba(255,107,26,0.4);
+  padding: 4px 14px; background: rgba(255,107,26,0.07);
+}
+.hero-date { font-size: 10px; letter-spacing: 0.2em; color: var(--text3); text-transform: uppercase; }
+
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(52px, 8vw, 96px);
+  letter-spacing: 0.04em;
+  color: var(--white);
+  line-height: 0.95;
+  margin-bottom: 8px;
+}
+.hero h1 .accent { color: var(--orange); }
+
+.hero-sub {
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--text2);
+  letter-spacing: 0.05em;
+  margin-top: 16px;
+  max-width: 560px;
+  line-height: 1.7;
+}
+
+.hero-chips {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-top: 24px;
+}
+.chip {
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 5px 12px; border: 1px solid var(--border2);
+  color: var(--text2);
+}
+.chip.orange { border-color: rgba(255,107,26,0.4); color: var(--orange3); background: rgba(255,107,26,0.06); }
+.chip.green { border-color: rgba(57,217,138,0.4); color: var(--green); background: rgba(57,217,138,0.06); }
+.chip.blue { border-color: rgba(74,158,255,0.4); color: var(--blue); background: rgba(74,158,255,0.06); }
+
+/* ── DIVIDER ── */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), var(--orange), var(--border2), transparent);
+  margin: 0 48px;
+  opacity: 0.5;
+}
+
+/* ── SECTIONS ── */
+.sections { max-width: 1200px; margin: 0 auto; padding: 0 32px 80px; }
+
+.section {
+  padding: 56px 0 0;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.section.visible { opacity: 1; transform: translateY(0); }
+
+.section-header {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 32px;
+}
+.section-num {
+  font-family: var(--display);
+  font-size: 13px; letter-spacing: 0.2em;
+  color: var(--orange); opacity: 0.6;
+}
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(22px, 3vw, 32px);
+  letter-spacing: 0.06em;
+  color: var(--white);
+}
+.section-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--border2), transparent);
+}
+
+/* ── COMPARE GRID ── */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media(max-width:700px){ .compare-grid{ grid-template-columns:1fr; } }
+
+.compare-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s;
+}
+.compare-card:hover { border-color: var(--border2); }
+.compare-card.hot { border-top: 2px solid var(--orange); }
+.compare-card.cool { border-top: 2px solid var(--blue); }
+.compare-card.warn { border-top: 2px solid var(--amber); }
+.compare-card.ok { border-top: 2px solid var(--green); }
+
+.card-label {
+  font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.card-label.orange { color: var(--orange); }
+.card-label.blue { color: var(--blue); }
+.card-label.green { color: var(--green); }
+.card-label.amber { color: var(--amber); }
+
+.card-title {
+  font-family: var(--display);
+  font-size: 26px; letter-spacing: 0.06em;
+  color: var(--white); margin-bottom: 16px;
+}
+
+.bullet-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.bullet-list li {
+  font-size: 12px; color: var(--text); line-height: 1.5;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.bullet-list li::before {
+  content: '▸';
+  color: var(--orange); flex-shrink: 0; margin-top: 1px; font-size: 10px;
+}
+.bullet-list.blue-dot li::before { color: var(--blue); }
+.bullet-list.green-dot li::before { color: var(--green); }
+.bullet-list.red-dot li::before { color: var(--red); }
+
+/* ── ARCH DIAGRAM ── */
+.arch-diagram {
+  background: var(--card); border: 1px solid var(--border);
+  padding: 32px; display: flex; align-items: center;
+  gap: 0; overflow-x: auto; position: relative;
+}
+
+/* ── FLOW DIAGRAM ── */
+.flow {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 0;
+}
+.flow-node {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 10px 18px;
+  font-size: 11px; font-family: var(--mono);
+  color: var(--text); white-space: nowrap;
+  position: relative;
+  transition: all 0.2s;
+}
+.flow-node:hover { border-color: var(--orange); color: var(--orange); }
+.flow-node.orange { border-color: rgba(255,107,26,0.5); color: var(--orange3); background: rgba(255,107,26,0.07); }
+.flow-node.blue { border-color: rgba(74,158,255,0.5); color: var(--blue); background: rgba(74,158,255,0.07); }
+.flow-node.green { border-color: rgba(57,217,138,0.5); color: var(--green); background: rgba(57,217,138,0.07); }
+.flow-node.red { border-color: rgba(255,71,87,0.5); color: var(--red); background: rgba(255,71,87,0.07); }
+.flow-node.amber { border-color: rgba(255,184,48,0.5); color: var(--amber); background: rgba(255,184,48,0.07); }
+
+.flow-arrow {
+  font-size: 16px; color: var(--text3); margin: 0 4px;
+  flex-shrink: 0;
+}
+.flow-arrow.orange { color: var(--orange); }
+.flow-arrow.green { color: var(--green); }
+
+/* ── COMPARISON TABLE ── */
+.comp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.comp-table th {
+  text-align: left; padding: 10px 16px;
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text3); border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+.comp-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text); line-height: 1.5;
+  vertical-align: top;
+}
+.comp-table tr:last-child td { border-bottom: none; }
+.comp-table tr:hover td { background: rgba(255,255,255,0.02); }
+.comp-table td:first-child { color: var(--text2); font-weight: 500; }
+.comp-table td.orange { color: var(--orange3); }
+.comp-table td.blue { color: var(--blue); }
+.comp-table td.green { color: var(--green); }
+.comp-table td.red { color: var(--red); }
+.comp-table td.amber { color: var(--amber); }
+.comp-table td.good { color: var(--green); }
+.comp-table td.bad { color: var(--red); }
+
+/* ── CODE BLOCK ── */
+.code-wrap {
+  background: #0a0c12;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--orange);
+  padding: 20px 24px;
+  font-size: 12px;
+  line-height: 1.9;
+  overflow-x: auto;
+  position: relative;
+}
+.code-wrap .comment { color: var(--text3); }
+.code-wrap .cmd { color: var(--orange3); }
+.code-wrap .flag { color: var(--blue); }
+.code-wrap .val { color: var(--green); }
+.code-wrap .out { color: var(--text2); }
+.code-wrap .tag { color: var(--purple); }
+.code-label {
+  font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 10px;
+}
+
+/* ── INSIGHT BOX ── */
+.insight {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: rgba(255,107,26,0.06);
+  border: 1px solid rgba(255,107,26,0.25);
+  border-left: 3px solid var(--orange);
+  padding: 16px 20px; margin-top: 16px;
+}
+.insight.sre {
+  background: rgba(255,71,87,0.05);
+  border-color: rgba(255,71,87,0.25);
+  border-left-color: var(--red);
+}
+.insight.green {
+  background: rgba(57,217,138,0.05);
+  border-color: rgba(57,217,138,0.25);
+  border-left-color: var(--green);
+}
+.insight.blue {
+  background: rgba(74,158,255,0.05);
+  border-color: rgba(74,158,255,0.25);
+  border-left-color: var(--blue);
+}
+.insight-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.insight-body { font-size: 12px; color: var(--text2); line-height: 1.7; }
+.insight-body strong { color: var(--orange3); }
+.insight.sre .insight-body strong { color: var(--red); }
+.insight.green .insight-body strong { color: var(--green); }
+.insight.blue .insight-body strong { color: var(--blue); }
+
+/* ── TABLE WRAP ── */
+.table-wrap {
+  background: var(--card); border: 1px solid var(--border); overflow: hidden;
+}
+
+/* ── VISUAL ARCH DIAGRAM ── */
+.visual-arch {
+  background: var(--card); border: 1px solid var(--border);
+  padding: 32px; position: relative; overflow: hidden;
+}
+.visual-arch::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255,107,26,0.04), transparent 70%);
+  pointer-events: none;
+}
+
+/* ── STEPS ── */
+.steps { display: flex; flex-direction: column; gap: 0; }
+.step {
+  display: flex; gap: 20px; align-items: flex-start;
+  position: relative; padding-bottom: 0;
+}
+.step:not(:last-child)::before {
+  content: '';
+  position: absolute; left: 17px; top: 36px; bottom: 0;
+  width: 1px; background: var(--border);
+}
+.step-num {
+  width: 34px; height: 34px; flex-shrink: 0;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--orange);
+  position: relative; z-index: 1;
+}
+.step-body { padding: 6px 0 28px; }
+.step-title { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 4px; }
+.step-desc { font-size: 11px; color: var(--text2); line-height: 1.6; }
+.step-code {
+  margin-top: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  font-size: 11px; color: var(--green);
+  display: inline-block;
+}
+
+/* ── PATH TABLE ── */
+.path-row {
+  display: grid; grid-template-columns: 180px 1fr;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.path-row:last-child { border-bottom: none; }
+.path-key { padding: 10px 16px; color: var(--text2); background: var(--bg2); font-weight: 500; }
+.path-val { padding: 10px 16px; color: var(--orange3); font-family: var(--mono); }
+
+/* ── EXIT CODES ── */
+.exit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.exit-card {
+  background: var(--card); border: 1px solid var(--border);
+  padding: 20px; text-align: center;
+}
+.exit-num {
+  font-family: var(--display);
+  font-size: 40px; letter-spacing: 0.05em;
+  display: block; margin-bottom: 6px;
+}
+.exit-num.green { color: var(--green); }
+.exit-num.orange { color: var(--orange); }
+.exit-num.red { color: var(--red); }
+.exit-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text3); }
+
+/* ── DEBUG FLOW ── */
+.debug-flow {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 8px; padding: 24px;
+  background: var(--bg2); border: 1px solid var(--border);
+}
+.dbf-step {
+  background: var(--card); border: 1px solid var(--border2);
+  padding: 10px 16px; font-size: 11px; color: var(--orange3);
+  position: relative;
+}
+.dbf-arrow { color: var(--text3); font-size: 16px; }
+
+/* ── SRE SCENARIOS ── */
+.scenario {
+  background: var(--card); border: 1px solid var(--border);
+  border-left: 3px solid var(--red);
+  padding: 24px; margin-bottom: 16px;
+}
+.scenario-title {
+  font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--red); margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.scenario-title::before { content: '⚠'; font-size: 12px; }
+
+/* ── TAKEAWAY GRID ── */
+.takeaway-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 16px; }
+.takeaway {
+  background: var(--card); border: 1px solid var(--border);
+  padding: 24px; position: relative; overflow: hidden;
+}
+.takeaway::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--orange), transparent);
+}
+.takeaway-icon { font-size: 24px; margin-bottom: 12px; display: block; }
+.takeaway-title { font-family: var(--display); font-size: 17px; letter-spacing: 0.06em; color: var(--white); margin-bottom: 10px; }
+.takeaway-body { font-family: var(--sans); font-size: 12px; color: var(--text2); line-height: 1.7; }
+
+/* ── INTERVIEW BADGE ── */
+.interview-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+  padding: 5px 12px; margin-top: 12px;
+  border: 1px solid rgba(155,127,244,0.4);
+  color: var(--purple);
+  background: rgba(155,127,244,0.07);
+}
+
+/* ── STOP-KILL VISUAL ── */
+.sk-visual {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.sk-card {
+  background: var(--card); border: 1px solid var(--border);
+  padding: 24px; text-align: center;
+}
+.sk-signal {
+  display: inline-flex; flex-direction: column; align-items: center;
+  gap: 8px; margin: 20px 0;
+}
+.sk-signal-val {
+  font-family: var(--display);
+  font-size: 48px; letter-spacing: 0.05em;
+}
+.sk-signal-val.sigterm { color: var(--amber); }
+.sk-signal-val.sigkill { color: var(--red); }
+.sk-pulse {
+  width: 60px; height: 60px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; position: relative;
+}
+.sk-pulse.sigterm {
+  background: rgba(255,184,48,0.12);
+  border: 2px solid rgba(255,184,48,0.4);
+  animation: pulse-amber 2s ease-in-out infinite;
+}
+.sk-pulse.sigkill {
+  background: rgba(255,71,87,0.12);
+  border: 2px solid rgba(255,71,87,0.6);
+  animation: pulse-red 0.8s ease-in-out infinite;
+}
+@keyframes pulse-amber {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,184,48,0.2); }
+  50% { box-shadow: 0 0 0 12px rgba(255,184,48,0); }
+}
+@keyframes pulse-red {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,71,87,0.3); }
+  50% { box-shadow: 0 0 0 16px rgba(255,71,87,0); }
+}
+
+/* ── ANIMATE IN ── */
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(30px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.hero { animation: fadeInUp 0.7s ease forwards; }
+
+/* ── MOBILE ── */
+@media(max-width:600px){
+  .hero { padding: 40px 20px 32px; }
+  .sections { padding: 0 16px 60px; }
+  .sk-visual, .exit-grid { grid-template-columns: 1fr; }
+  .compare-grid { grid-template-columns: 1fr; }
+}
+
+/* ── STICKY SECTION NAV ── */
+.sticky-nav-marker { position: relative; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="nav-brand">🐳 DAY 01</div>
+  <div class="nav-links">
+    <a href="#s1" class="nav-link">Architecture</a>
+    <a href="#s2" class="nav-link">VM vs Container</a>
+    <a href="#s3" class="nav-link">Install</a>
+    <a href="#s4" class="nav-link">Docker Arch</a>
+    <a href="#s5" class="nav-link">Hello-World</a>
+    <a href="#s6" class="nav-link">Nginx Lab</a>
+    <a href="#s7" class="nav-link">Stop vs Kill</a>
+    <a href="#s8" class="nav-link">SRE Debug</a>
+    <a href="#s8b" class="nav-link">PID 1 Truth</a>
+    <a href="#s9" class="nav-link">PID Hunt</a>
+    <a href="#s10" class="nav-link">Takeaways</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">
+    <div class="hero-tag">Day 1 of 10</div>
+    <div class="hero-date">Docker SRE Fundamentals</div>
+  </div>
+  <h1>DOCKER<br><span class="accent">INTERNALS</span></h1>
+  <div class="hero-sub">
+    Architecture · Lifecycle · Debugging · SRE Scenarios<br>
+    Everything you ran, broke, and fixed — visual revision mode.
+  </div>
+  <div class="hero-chips">
+    <span class="chip orange">Microservices</span>
+    <span class="chip blue">VM vs Container</span>
+    <span class="chip">Docker Daemon</span>
+    <span class="chip orange">Stop vs Kill</span>
+    <span class="chip green">SRE Debug</span>
+    <span class="chip">PID Hunt</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="sections">
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S1: MONOLITH vs MICROSERVICES -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <span class="section-title">MICROSERVICES vs MONOLITH</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="compare-grid">
+
+    <div class="compare-card hot">
+      <div class="card-label orange">🧱 Monolith</div>
+      <div class="card-title">One Big Block</div>
+      <ul class="bullet-list">
+        <li>Single codebase — everything lives together</li>
+        <li>Single deployment — one binary, one server</li>
+        <li>All components tightly coupled</li>
+        <li>One bug can crash the entire app</li>
+      </ul>
+      <div style="margin-top:20px;">
+        <div class="code-label">Traffic Flow</div>
+        <div class="arch-diagram" style="padding:16px 20px;">
+          <div class="flow">
+            <div class="flow-node orange">User</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node">App Server</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node blue">DB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="compare-card cool">
+      <div class="card-label blue">⚙️ Microservices</div>
+      <div class="card-title">Independent Services</div>
+      <ul class="bullet-list blue-dot">
+        <li>Multiple independent services</li>
+        <li>Each service has its own logic &amp; database</li>
+        <li>Services communicate via APIs</li>
+        <li>One service fails → others stay alive</li>
+      </ul>
+      <div style="margin-top:20px;">
+        <div class="code-label">Traffic Flow</div>
+        <div class="arch-diagram" style="padding:16px 20px; flex-direction:column; align-items:flex-start; gap:8px;">
+          <div class="flow">
+            <div class="flow-node orange">User</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node amber">API Gateway</div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-node blue">Auth</div>
+            <div class="flow-arrow">/</div>
+            <div class="flow-node blue">Orders</div>
+            <div class="flow-arrow">/</div>
+            <div class="flow-node blue">Payment</div>
+          </div>
+          <div class="flow" style="margin-left:130px;">
+            <div class="flow-arrow" style="transform:rotate(90deg); margin:0 6px;">↓</div>
+            <span style="font-size:11px;color:var(--text3);">Each → own DB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:16px;" class="table-wrap">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>🧱 Monolith</th>
+          <th>⚙️ Microservices</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Debugging</td><td class="green">Easy — single log</td><td class="red">Hard — distributed tracing</td></tr>
+        <tr><td>Failure impact</td><td class="red">Full app down</td><td class="green">Isolated — one service</td></tr>
+        <tr><td>Scaling</td><td class="red">Scale everything</td><td class="green">Scale only what's slow</td></tr>
+        <tr><td>Deploy</td><td class="green">One deployment</td><td class="amber">N deployments (complexity)</td></tr>
+        <tr><td>Team size</td><td class="green">Small teams</td><td class="blue">Large, independent teams</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight sre">
+    <div class="insight-icon">🧠</div>
+    <div class="insight-body">
+      <strong>SRE Insight:</strong> Microservices are harder to debug due to distributed tracing and inter-service communication. When something breaks, you need to trace the request across 3–5 services. That's why tools like Jaeger, Zipkin, and OpenTelemetry exist.
+      <div class="interview-badge">💬 Common interview question — "Why are microservices harder to debug?"</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S2: VM vs CONTAINERS -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <span class="section-title">VIRTUALIZATION vs CONTAINERIZATION</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="compare-grid">
+
+    <div class="compare-card warn">
+      <div class="card-label amber">🖥️ Virtual Machines</div>
+      <div class="card-title">Full OS Per App</div>
+      <div style="margin-bottom:16px;">
+        <!-- Stack diagram -->
+        <div style="display:flex;flex-direction:column;gap:4px;margin:16px 0;">
+          <div style="background:rgba(255,184,48,0.1);border:1px solid rgba(255,184,48,0.3);padding:8px 14px;text-align:center;font-size:11px;color:var(--amber);">App A</div>
+          <div style="background:rgba(255,184,48,0.07);border:1px solid rgba(255,184,48,0.2);padding:8px 14px;text-align:center;font-size:11px;color:var(--text2);">Guest OS (Linux/Win)</div>
+          <div style="background:var(--bg3);border:1px solid var(--border);padding:8px 14px;text-align:center;font-size:11px;color:var(--text3);">Hypervisor (VMware/KVM)</div>
+          <div style="background:var(--bg);border:1px solid var(--border2);padding:8px 14px;text-align:center;font-size:11px;color:var(--text3);">Physical Hardware</div>
+        </div>
+      </div>
+      <ul class="bullet-list">
+        <li>Each VM has its own full OS</li>
+        <li>Heavy — GBs per VM</li>
+        <li>Boot time: minutes</li>
+        <li>Strong hardware-level isolation</li>
+      </ul>
+    </div>
+
+    <div class="compare-card ok">
+      <div class="card-label orange">🐳 Containers</div>
+      <div class="card-title">Shared OS Kernel</div>
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;flex-direction:column;gap:4px;margin:16px 0;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+            <div style="background:rgba(255,107,26,0.1);border:1px solid rgba(255,107,26,0.3);padding:8px 10px;text-align:center;font-size:11px;color:var(--orange3);">Container A</div>
+            <div style="background:rgba(255,107,26,0.1);border:1px solid rgba(255,107,26,0.3);padding:8px 10px;text-align:center;font-size:11px;color:var(--orange3);">Container B</div>
+          </div>
+          <div style="background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);padding:8px 14px;text-align:center;font-size:11px;color:var(--green);">Docker Engine</div>
+          <div style="background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.2);padding:8px 14px;text-align:center;font-size:11px;color:var(--blue);">Host OS Kernel (shared)</div>
+          <div style="background:var(--bg);border:1px solid var(--border2);padding:8px 14px;text-align:center;font-size:11px;color:var(--text3);">Physical Hardware</div>
+        </div>
+      </div>
+      <ul class="bullet-list green-dot">
+        <li>Share the same OS kernel</li>
+        <li>Lightweight — MBs per container</li>
+        <li>Start time: milliseconds</li>
+        <li>Process-level isolation (namespaces + cgroups)</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div style="margin-top:16px;" class="table-wrap">
+    <table class="comp-table">
+      <thead><tr><th>Property</th><th>🖥️ VM</th><th>🐳 Container</th></tr></thead>
+      <tbody>
+        <tr><td>OS</td><td class="red">Full Guest OS</td><td class="green">Shared Host Kernel</td></tr>
+        <tr><td>Size</td><td class="red">GBs</td><td class="green">MBs</td></tr>
+        <tr><td>Boot time</td><td class="red">Minutes</td><td class="green">Milliseconds</td></tr>
+        <tr><td>Isolation</td><td class="green">Hardware-level</td><td class="amber">Process-level</td></tr>
+        <tr><td>Portability</td><td class="amber">Moderate</td><td class="green">High (runs anywhere)</td></tr>
+        <tr><td>Resource usage</td><td class="red">Heavy</td><td class="green">Minimal</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight blue">
+    <div class="insight-icon">🔑</div>
+    <div class="insight-body">
+      <strong>Key mechanism:</strong> Containers use <strong>Linux namespaces</strong> (for isolation) and <strong>cgroups</strong> (for resource limits). There's no Guest OS — just processes with restricted visibility. This is why containers start in milliseconds and why a container is fundamentally just <em>a process</em>.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S3: DOCKER INSTALLATION -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <span class="section-title">INSTALLATION & VERIFICATION</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="compare-grid">
+    <div>
+      <div class="code-label">Install on Amazon Linux / RHEL</div>
+      <div class="code-wrap">
+<span class="comment"># Install Docker</span>
+<span class="cmd">sudo yum install</span> <span class="flag">-y</span> <span class="val">docker</span>
+
+<span class="comment"># Start + enable on boot</span>
+<span class="cmd">sudo systemctl start</span> <span class="val">docker</span>
+<span class="cmd">sudo systemctl enable</span> <span class="val">docker</span>
+
+<span class="comment"># Add user to docker group (no sudo)</span>
+<span class="cmd">sudo usermod</span> <span class="flag">-aG</span> <span class="val">docker</span> <span class="tag">$USER</span>
+      </div>
+
+      <div style="margin-top:12px;">
+      <div class="code-label">Verify Installation</div>
+      <div class="code-wrap">
+<span class="cmd">docker version</span>
+<span class="out">Client: Docker Engine - Community</span>
+<span class="out"> Version: 24.0.x</span>
+
+<span class="cmd">docker info</span>
+<span class="out">Containers: 0</span>
+<span class="out">Images: 0</span>
+<span class="out">Server Version: 24.0.x</span>
+      </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="code-label">Important File Paths</div>
+      <div style="background:var(--card);border:1px solid var(--border);overflow:hidden;">
+        <div class="path-row">
+          <div class="path-key">Docker CLI</div>
+          <div class="path-val">/usr/bin/docker</div>
+        </div>
+        <div class="path-row">
+          <div class="path-key">Docker Daemon</div>
+          <div class="path-val">dockerd</div>
+        </div>
+        <div class="path-row">
+          <div class="path-key">Unix Socket</div>
+          <div class="path-val">/var/run/docker.sock</div>
+        </div>
+        <div class="path-row">
+          <div class="path-key">Image Storage</div>
+          <div class="path-val">/var/lib/docker</div>
+        </div>
+        <div class="path-row">
+          <div class="path-key">Config</div>
+          <div class="path-val">/etc/docker/daemon.json</div>
+        </div>
+      </div>
+
+      <div class="insight" style="margin-top:12px;">
+        <div class="insight-icon">💡</div>
+        <div class="insight-body">
+          The <strong>docker.sock</strong> file is the Unix socket used by CLI to communicate with daemon. If you mount this into a container, that container gets <strong>full Docker access</strong> — a critical security concern in production.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S4: DOCKER ARCHITECTURE -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <span class="section-title">DOCKER ARCHITECTURE</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="visual-arch">
+    <div class="code-label" style="margin-bottom:24px;">Client–Server Architecture</div>
+
+    <!-- Three columns: client | daemon | registry -->
+    <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:0;align-items:center;">
+
+      <!-- CLIENT -->
+      <div style="background:rgba(255,107,26,0.07);border:1px solid rgba(255,107,26,0.3);padding:24px;text-align:center;">
+        <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--orange);margin-bottom:12px;">Docker Client</div>
+        <div style="font-size:28px;margin-bottom:12px;">💻</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.7;">
+          docker run<br>docker build<br>docker pull<br>docker ps
+        </div>
+        <div style="margin-top:12px;font-size:10px;color:var(--text3);">CLI you type into</div>
+      </div>
+
+      <!-- ARROW 1 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 16px;">
+        <div style="font-size:22px;color:var(--orange);">→</div>
+        <div style="font-size:9px;color:var(--text3);text-align:center;white-space:nowrap;">REST API<br>/var/run/<br>docker.sock</div>
+      </div>
+
+      <!-- DAEMON -->
+      <div style="background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.3);padding:24px;text-align:center;">
+        <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--blue);margin-bottom:12px;">Docker Daemon (dockerd)</div>
+        <div style="font-size:28px;margin-bottom:12px;">⚙️</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.7;">
+          Manages containers<br>Manages images<br>Manages volumes<br>Manages networks
+        </div>
+        <div style="margin-top:12px;font-size:10px;color:var(--text3);">Runs as root on host</div>
+      </div>
+
+      <!-- ARROW 2 -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 16px;">
+        <div style="font-size:22px;color:var(--blue);">→</div>
+        <div style="font-size:9px;color:var(--text3);text-align:center;white-space:nowrap;">HTTPS<br>Pull/Push<br>images</div>
+      </div>
+
+      <!-- REGISTRY -->
+      <div style="background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.3);padding:24px;text-align:center;">
+        <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--green);margin-bottom:12px;">Docker Registry</div>
+        <div style="font-size:28px;margin-bottom:12px;">🗄️</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.7;">
+          Docker Hub<br>AWS ECR<br>GitHub Registry<br>Private Registry
+        </div>
+        <div style="margin-top:12px;font-size:10px;color:var(--text3);">Image storage</div>
+      </div>
+    </div>
+
+    <div class="insight" style="margin-top:20px;">
+      <div class="insight-icon">🧠</div>
+      <div class="insight-body">
+        <strong>Key insight:</strong> Docker follows client-server architecture. The CLI is just a thin wrapper that sends REST API calls to the daemon over the Unix socket. The daemon does the actual work. This is why <code style="color:var(--orange3)">docker</code> commands work remotely if you point <code style="color:var(--orange3)">DOCKER_HOST</code> to another machine.
+      </div>
+    </div>
+  </div>
+
+  <!-- Docker Objects -->
+  <div style="margin-top:16px;">
+    <div class="code-label">Docker Objects</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+      <div class="compare-card" style="border-top:2px solid var(--orange);">
+        <div class="card-label orange">📦 Images</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">Read-only template to create containers. Stored in layers. Pulled from registry.</div>
+      </div>
+      <div class="compare-card" style="border-top:2px solid var(--blue);">
+        <div class="card-label blue">🚀 Containers</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">Running instance of an image. Has a writable layer on top. Dies when process dies.</div>
+      </div>
+      <div class="compare-card" style="border-top:2px solid var(--green);">
+        <div class="card-label green">💾 Volumes</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">Persistent storage. Survives container deletion. Managed by Docker daemon.</div>
+      </div>
+      <div class="compare-card" style="border-top:2px solid var(--purple);">
+        <div class="card-label" style="color:var(--purple);">🌐 Networks</div>
+        <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">Virtual networks for container communication. Bridge, host, overlay types.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S5: HELLO-WORLD TRACE -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <span class="section-title">HELLO-WORLD TRACE</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="compare-grid">
+    <div>
+      <div class="code-label">Command</div>
+      <div class="code-wrap" style="font-size:15px;padding:16px 24px;">
+        <span class="cmd">docker run</span> <span class="val">hello-world</span>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div class="code-label">Step-by-Step Trace</div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">CLI sends request</div>
+              <div class="step-desc">docker CLI sends REST API call to <code>/var/run/docker.sock</code></div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Daemon checks local images</div>
+              <div class="step-desc">Looks in <code>/var/lib/docker/image</code> — not found (first run)</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Pull from Docker Hub</div>
+              <div class="step-code">Unable to find image locally — pulling from library/hello-world</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Image stored in layers</div>
+              <div class="step-desc">Each layer saved to <code>/var/lib/docker/overlay2/</code></div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <div class="step-title">Container created</div>
+              <div class="step-desc">Daemon creates writable container layer on top of image</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <div class="step-title">Process runs → prints → exits</div>
+              <div class="step-desc">PID 1 inside container runs, prints "Hello from Docker!", exits with code 0</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">7</div>
+            <div class="step-body">
+              <div class="step-title">Container stops</div>
+              <div class="step-desc">Container lifecycle = process lifecycle. Process dead = container dead.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="code-label">What you see in terminal</div>
+      <div class="code-wrap" style="font-size:11px;">
+<span class="out">Unable to find image 'hello-world:latest' locally</span>
+<span class="out">latest: Pulling from library/hello-world</span>
+<span class="out">719385e32844: Pull complete</span>
+<span class="out">Digest: sha256:...</span>
+<span class="out">Status: Downloaded newer image for hello-world:latest</span>
+<br>
+<span class="val">Hello from Docker!</span>
+<span class="out">This message shows that your installation appears to be</span>
+<span class="out">working correctly.</span>
+      </div>
+
+      <div class="insight" style="margin-top:12px;">
+        <div class="insight-icon">⚡</div>
+        <div class="insight-body">
+          <strong>Container lifecycle = process lifecycle.</strong> This is the most important concept in Docker. When the process (PID 1) inside the container exits, the container stops. Always.
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div class="code-label">Verify after running</div>
+        <div class="code-wrap">
+<span class="cmd">docker ps</span>
+<span class="out">CONTAINER ID  IMAGE  STATUS</span>
+<span class="comment"># nothing! — it already exited</span>
+<br>
+<span class="cmd">docker ps</span> <span class="flag">-a</span>
+<span class="out">CONTAINER ID  IMAGE        STATUS</span>
+<span class="val">a1b2c3d4e5f6  hello-world  Exited (0) 3s ago</span>
+        </div>
+      </div>
+
+      <div class="interview-badge">
+        💬 "Why did the container stop immediately?" — process exited, container follows.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S6: NGINX LAB -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <span class="section-title">NGINX REAL-WORLD LAB</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="compare-grid">
+    <div>
+      <div class="code-label">Run & Expose nginx</div>
+      <div class="code-wrap">
+<span class="comment"># -d = detached (background)</span>
+<span class="comment"># -p = port mapping host:container</span>
+<span class="comment"># --name = give it a name</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">80:80</span> <span class="flag">--name</span> <span class="val">my-nginx</span> <span class="tag">nginx</span>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div class="code-label">Port Mapping Explained</div>
+        <div style="background:var(--card);border:1px solid var(--border);padding:20px;text-align:center;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+            <div style="text-align:center;">
+              <div style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Browser</div>
+              <div style="border:1px solid rgba(255,107,26,0.4);padding:8px 16px;font-size:13px;color:var(--orange);">:80 (host)</div>
+            </div>
+            <div style="font-size:20px;color:var(--orange);">→</div>
+            <div style="text-align:center;">
+              <div style="font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Container</div>
+              <div style="border:1px solid rgba(74,158,255,0.4);padding:8px 16px;font-size:13px;color:var(--blue);">:80 (nginx)</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;font-size:11px;color:var(--text2);">
+            <strong style="color:var(--orange3);">-p HOST_PORT:CONTAINER_PORT</strong><br>
+            Traffic to EC2's port 80 → forwarded to nginx inside container port 80
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div class="code-label">AWS Requirement</div>
+        <div class="insight blue">
+          <div class="insight-icon">☁️</div>
+          <div class="insight-body">
+            In <strong>Security Group</strong>: Add Inbound rule — Type: HTTP, Port: 80, Source: 0.0.0.0/0. Without this, the port is open on the container but blocked at AWS network level.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="code-label">Verify & Debug</div>
+      <div class="code-wrap">
+<span class="comment"># Check it's running</span>
+<span class="cmd">docker ps</span>
+<span class="out">my-nginx  nginx  Up 2 minutes  0.0.0.0:80->80/tcp</span>
+
+<span class="comment"># View live logs</span>
+<span class="cmd">docker logs</span> <span class="flag">-f</span> <span class="val">my-nginx</span>
+<span class="out">172.17.0.1 - GET / HTTP/1.1 200 OK</span>
+
+<span class="comment"># Get inside the container</span>
+<span class="cmd">docker exec</span> <span class="flag">-it</span> <span class="val">my-nginx</span> <span class="tag">bash</span>
+<span class="out">root@a1b2:/# cat /etc/nginx/nginx.conf</span>
+
+<span class="comment"># Copy index.html from host to container</span>
+<span class="cmd">docker cp</span> <span class="val">index.html</span> <span class="tag">my-nginx:/usr/share/nginx/html/</span>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div class="code-label">Container Listing Commands</div>
+        <div class="table-wrap">
+          <table class="comp-table">
+            <thead><tr><th>Command</th><th>Shows</th></tr></thead>
+            <tbody>
+              <tr><td><code style="color:var(--orange3)">docker ps</code></td><td class="green">Running containers only</td></tr>
+              <tr><td><code style="color:var(--orange3)">docker ps -a</code></td><td class="amber">ALL containers (running + stopped)</td></tr>
+              <tr><td><code style="color:var(--orange3)">docker ps -q</code></td><td class="blue">Only container IDs</td></tr>
+              <tr><td><code style="color:var(--orange3)">docker ps --filter status=exited</code></td><td>Only exited containers</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S7: STOP vs KILL -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <span class="section-title">STOP vs KILL</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="sk-visual">
+    <div class="sk-card" style="border-top:2px solid var(--amber);">
+      <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--amber);margin-bottom:8px;">docker stop</div>
+      <div class="sk-signal">
+        <div class="sk-pulse sigterm">🛑</div>
+        <div class="sk-signal-val sigterm">SIGTERM</div>
+      </div>
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px;">
+        Sends <strong style="color:var(--amber)">SIGTERM</strong> first — asks the process to gracefully shut down. Waits 10 seconds for cleanup. If still alive, sends SIGKILL.
+      </div>
+      <div class="code-wrap" style="text-align:left;font-size:11px;">
+<span class="cmd">docker stop</span> <span class="val">my-nginx</span>
+<span class="comment"># Exit code: 0 (clean)</span>
+      </div>
+      <div class="insight" style="margin-top:12px;">
+        <div class="insight-icon">✅</div>
+        <div class="insight-body"><strong>Use in production.</strong> Allows the app to close DB connections, flush buffers, finish in-flight requests.</div>
+      </div>
+    </div>
+
+    <div class="sk-card" style="border-top:2px solid var(--red);">
+      <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--red);margin-bottom:8px;">docker kill</div>
+      <div class="sk-signal">
+        <div class="sk-pulse sigkill">💀</div>
+        <div class="sk-signal-val sigkill">SIGKILL</div>
+      </div>
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px;">
+        Sends <strong style="color:var(--red)">SIGKILL</strong> immediately — the kernel kills the process instantly. No cleanup possible. App has no say.
+      </div>
+      <div class="code-wrap" style="text-align:left;font-size:11px;">
+<span class="cmd">docker kill</span> <span class="val">my-nginx</span>
+<span class="comment"># Exit code: 137 (128+9 = SIGKILL)</span>
+      </div>
+      <div class="insight sre" style="margin-top:12px;">
+        <div class="insight-icon">⚠️</div>
+        <div class="insight-body"><strong>Last resort only.</strong> Use when container is frozen and not responding to stop. Risk: data corruption, incomplete writes.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exit codes -->
+  <div style="margin-top:16px;">
+    <div class="code-label">Exit Code Reference — memorize these for SRE interviews</div>
+    <div class="exit-grid">
+      <div class="exit-card">
+        <span class="exit-num green">0</span>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Clean exit</div>
+        <div class="exit-label">docker stop or normal completion</div>
+      </div>
+      <div class="exit-card">
+        <span class="exit-num orange">1</span>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">App error</div>
+        <div class="exit-label">Process crashed / non-zero exit</div>
+      </div>
+      <div class="exit-card">
+        <span class="exit-num red">137</span>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">SIGKILL / OOM</div>
+        <div class="exit-label">docker kill or OOMKilled (128 + 9)</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;" class="table-wrap">
+    <table class="comp-table">
+      <thead><tr><th>Scenario</th><th>Use</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Normal shutdown</td><td class="green">docker stop</td><td>Graceful, allows cleanup</td></tr>
+        <tr><td>Container frozen</td><td class="amber">docker stop → wait → kill</td><td>Try graceful first</td></tr>
+        <tr><td>Emergency</td><td class="red">docker kill</td><td>When nothing else works</td></tr>
+        <tr><td>Restart policy trigger</td><td class="blue">Stop → restart policy fires</td><td>on-failure, unless-stopped</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S8: SRE DEBUGGING -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <span class="section-num">08</span>
+    <span class="section-title">SRE DEBUGGING — CRASHED CONTAINERS</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- Debug flow -->
+  <div class="code-label">Universal SRE Debug Flow — internalize this</div>
+  <div class="debug-flow">
+    <div class="dbf-step">docker ps -a<br><span style="font-size:9px;color:var(--text3);">find it</span></div>
+    <div class="dbf-arrow">→</div>
+    <div class="dbf-step">docker logs &lt;id&gt;<br><span style="font-size:9px;color:var(--text3);">read output</span></div>
+    <div class="dbf-arrow">→</div>
+    <div class="dbf-step">docker inspect &lt;id&gt;<br><span style="font-size:9px;color:var(--text3);">full metadata</span></div>
+    <div class="dbf-arrow">→</div>
+    <div class="dbf-step">docker exec -it &lt;id&gt; sh<br><span style="font-size:9px;color:var(--text3);">if still running</span></div>
+    <div class="dbf-arrow">→</div>
+    <div class="dbf-step">docker stats<br><span style="font-size:9px;color:var(--text3);">resource usage</span></div>
+  </div>
+
+  <div style="margin-top:24px;display:flex;flex-direction:column;gap:16px;">
+
+    <div class="scenario">
+      <div class="scenario-title">Scenario 1 — Intentional Crash</div>
+      <div class="code-wrap">
+<span class="comment"># Run a container that exits with error code 1</span>
+<span class="cmd">docker run</span> <span class="flag">--name</span> <span class="val">crash-test</span> <span class="tag">ubuntu</span> <span class="val">false</span>
+
+<span class="cmd">docker ps</span> <span class="flag">-a</span>
+<span class="out">crash-test  ubuntu  Exited (1) 2s ago</span>
+
+<span class="comment"># Logs show nothing — 'false' command has no output</span>
+<span class="cmd">docker logs</span> <span class="val">crash-test</span>
+      </div>
+      <div class="insight sre" style="margin-top:10px;">
+        <div class="insight-icon">🔍</div>
+        <div class="insight-body"><strong>Exit code 1</strong> = the process failed. The command <code>false</code> always exits with 1. In real life this means your app crashed at startup — check the logs first.</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-title">Scenario 2 — Wrong Path Error</div>
+      <div class="code-wrap">
+<span class="comment"># Try to list a directory that doesn't exist</span>
+<span class="cmd">docker run</span> <span class="flag">--name</span> <span class="val">crash-test2</span> <span class="tag">ubuntu</span> <span class="val">ls /wrong-path</span>
+
+<span class="cmd">docker logs</span> <span class="val">crash-test2</span>
+<span class="out" style="color:var(--red);">ls: cannot access '/wrong-path': No such file or directory</span>
+
+<span class="cmd">docker inspect</span> <span class="val">crash-test2</span> <span class="flag">--format</span> <span class="val">'{{.State.ExitCode}}'</span>
+<span class="out">2</span>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="scenario-title">Scenario 3 — Read inspect for full context</div>
+      <div class="code-wrap">
+<span class="cmd">docker inspect</span> <span class="val">crash-test2</span>
+<span class="comment"># Look for these fields in the output:</span>
+<span class="out">"State": {</span>
+<span class="out">  "Status": "exited",</span>
+<span class="out">  "ExitCode": 2,</span>
+<span class="out">  "Error": "",</span>
+<span class="out">  "OOMKilled": false,</span>
+<span class="out">  "StartedAt": "2024-01-15T10:00:01Z",</span>
+<span class="out">  "FinishedAt": "2024-01-15T10:00:01Z"</span>
+<span class="out">}</span>
+      </div>
+      <div class="insight" style="margin-top:10px;">
+        <div class="insight-icon">💡</div>
+        <div class="insight-body">
+          <strong>OOMKilled: true</strong> means the container was killed by the OS because it exceeded memory limits. This is exit code 137. You'll see this in production when containers grow unbounded.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S8b: CONTAINER LIFECYCLE / PID 1 -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s8b">
+  <div class="section-header">
+    <span class="section-num">08b</span>
+    <span class="section-title">WHY CONTAINERS CRASH — THE PID 1 TRUTH</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- CORE IDEA -->
+  <div style="background:rgba(255,107,26,0.07);border:1px solid rgba(255,107,26,0.35);border-left:4px solid var(--orange);padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:16px;right:20px;font-family:var(--display);font-size:80px;color:rgba(255,107,26,0.06);letter-spacing:0.05em;user-select:none;">CORE IDEA</div>
+    <div style="font-size:9px;letter-spacing:0.3em;text-transform:uppercase;color:var(--orange);margin-bottom:16px;">🧠 Remember Forever</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-size:28px;">🐳</div>
+        <div style="font-family:var(--display);font-size:22px;letter-spacing:0.06em;color:var(--white);">A Container = One Main Process (PID 1)</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+        <div style="background:rgba(57,217,138,0.08);border:1px solid rgba(57,217,138,0.3);padding:14px 18px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">🟢</span>
+          <span style="font-size:12px;color:var(--text2);">Process <strong style="color:var(--green)">runs</strong> → Container <strong style="color:var(--green)">runs</strong></span>
+        </div>
+        <div style="background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.3);padding:14px 18px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:18px;">🔴</span>
+          <span style="font-size:12px;color:var(--text2);">Process <strong style="color:var(--red)">exits</strong> → Container <strong style="color:var(--red)">stops</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERNAL FLOW SIDE BY SIDE -->
+  <div class="compare-grid" style="margin-bottom:24px;">
+
+    <div class="compare-card ok">
+      <div class="card-label green">⚡ Long-Running Process</div>
+      <div class="code-label" style="margin-bottom:8px;">Command</div>
+      <div class="code-wrap" style="margin-bottom:16px;font-size:13px;padding:12px 18px;">
+        <span class="cmd">docker run</span> <span class="val">nginx</span>
+      </div>
+      <div class="code-label">Internal Flow</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text2);padding:7px 12px;background:var(--bg3);border-left:2px solid var(--text3);">
+          <span style="color:var(--text3);min-width:16px;">1.</span> Docker daemon creates container
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text2);padding:7px 12px;background:var(--bg3);border-left:2px solid var(--text3);">
+          <span style="color:var(--text3);min-width:16px;">2.</span> Starts process: <code style="color:var(--orange3)">nginx</code>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text2);padding:7px 12px;background:var(--bg3);border-left:2px solid var(--text3);">
+          <span style="color:var(--text3);min-width:16px;">3.</span> nginx becomes <strong style="color:var(--orange)">PID 1</strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:11px;padding:7px 12px;background:rgba(57,217,138,0.07);border-left:2px solid var(--green);color:var(--green);">
+          <span style="min-width:16px;">4.</span> <strong>nginx keeps running → container ALIVE ✅</strong>
+        </div>
+      </div>
+      <!-- Tree diagram -->
+      <div style="margin-top:16px;background:var(--bg);border:1px solid var(--border);padding:16px 20px;font-size:12px;font-family:var(--mono);">
+        <div style="color:var(--text3);margin-bottom:4px;">Container</div>
+        <div style="color:var(--text2);margin-left:12px;">└── <span style="color:var(--green)">nginx (PID 1)</span></div>
+        <div style="color:var(--text2);margin-left:28px;">└── <span style="color:var(--text3)">keeps running...</span></div>
+        <div style="margin-top:10px;padding:6px 10px;background:rgba(57,217,138,0.08);border:1px solid rgba(57,217,138,0.3);font-size:11px;color:var(--green);text-align:center;letter-spacing:0.12em;">
+          STATUS: RUNNING 🟢
+        </div>
+      </div>
+    </div>
+
+    <div class="compare-card" style="border-top:2px solid var(--red);">
+      <div class="card-label red" style="color:var(--red);">⚡ Short-Lived Process</div>
+      <div class="code-label" style="margin-bottom:8px;">Command</div>
+      <div class="code-wrap" style="margin-bottom:16px;font-size:13px;padding:12px 18px;">
+        <span class="cmd">docker run</span> <span class="val">ubuntu</span> <span class="tag">ls</span>
+      </div>
+      <div class="code-label">Internal Flow</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text2);padding:7px 12px;background:var(--bg3);border-left:2px solid var(--text3);">
+          <span style="color:var(--text3);min-width:16px;">1.</span> Container created
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text2);padding:7px 12px;background:var(--bg3);border-left:2px solid var(--text3);">
+          <span style="color:var(--text3);min-width:16px;">2.</span> Runs: <code style="color:var(--orange3)">ls</code> → prints directory listing
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text2);padding:7px 12px;background:var(--bg3);border-left:2px solid var(--text3);">
+          <span style="color:var(--text3);min-width:16px;">3.</span> <code>ls</code> finishes → <strong style="color:var(--orange)">PID 1 exits</strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:11px;padding:7px 12px;background:rgba(255,71,87,0.07);border-left:2px solid var(--red);color:var(--red);">
+          <span style="min-width:16px;">4.</span> <strong>Container STOPS ❌</strong>
+        </div>
+      </div>
+      <!-- Tree diagram -->
+      <div style="margin-top:16px;background:var(--bg);border:1px solid var(--border);padding:16px 20px;font-size:12px;font-family:var(--mono);">
+        <div style="color:var(--text3);margin-bottom:4px;">Container</div>
+        <div style="color:var(--text2);margin-left:12px;">└── <span style="color:var(--red)">ls (PID 1)</span></div>
+        <div style="color:var(--text2);margin-left:28px;">└── <span style="color:var(--text3)">finishes → exits</span></div>
+        <div style="margin-top:10px;padding:6px 10px;background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.3);font-size:11px;color:var(--red);text-align:center;letter-spacing:0.12em;">
+          STATUS: EXITED (0) 🔴
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- WHY THIS DESIGN -->
+  <div style="background:var(--card);border:1px solid var(--border);padding:28px;margin-bottom:24px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--amber);margin-bottom:18px;">💥 Why This Design?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div>
+        <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-bottom:12px;">Docker is NOT a VM — it does NOT run:</div>
+        <ul class="bullet-list red-dot">
+          <li>Full OS with init system</li>
+          <li>Background daemon services</li>
+          <li>Multiple unrelated processes</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);margin-bottom:12px;">It runs exactly ONE main process:</div>
+        <ul class="bullet-list green-dot">
+          <li>That process IS PID 1</li>
+          <li>Container lives and dies with it</li>
+          <li>Isolation is at the process level</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:20px;padding:16px 20px;background:var(--bg2);border:1px solid var(--border2);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">
+      🏠 <strong style="color:var(--orange3);">Real-world analogy:</strong> A container is like a worker hired for one specific job.<br>
+      A <strong style="color:var(--green)">security guard (nginx)</strong> — always on duty → container alive.<br>
+      A <strong style="color:var(--amber)">delivery person (ls)</strong> — delivers the list, job done → worker leaves → container stops.
+    </div>
+  </div>
+
+  <!-- 4 PRODUCTION EXAMPLES -->
+  <div class="code-label" style="margin-bottom:14px;">🔥 Real Production Examples</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:24px;">
+
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--green);padding:22px;">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--green);margin-bottom:10px;">🟢 Web Server</div>
+      <div class="code-wrap" style="padding:10px 14px;font-size:11px;margin-bottom:12px;border-left-color:var(--green);">
+        <span class="cmd">docker run</span> <span class="val">nginx</span>
+      </div>
+      <ul class="bullet-list green-dot" style="font-size:11px;">
+        <li>nginx listens on port 80 forever</li>
+        <li>Used in: websites, load balancers</li>
+      </ul>
+      <div style="margin-top:10px;padding:5px 10px;font-size:10px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);color:var(--green);letter-spacing:0.1em;">LONG-RUNNING → STAYS ALIVE</div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--blue);padding:22px;">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--blue);margin-bottom:10px;">🟢 API Service</div>
+      <div class="code-wrap" style="padding:10px 14px;font-size:11px;margin-bottom:12px;border-left-color:var(--blue);">
+        <span class="tag">CMD</span> <span class="val">["python", "app.py"]</span>
+      </div>
+      <ul class="bullet-list blue-dot" style="font-size:11px;">
+        <li>API server runs continuously</li>
+        <li>Used in: microservices, backends</li>
+      </ul>
+      <div style="margin-top:10px;padding:5px 10px;font-size:10px;background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.25);color:var(--blue);letter-spacing:0.1em;">LONG-RUNNING → STAYS ALIVE</div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--amber);padding:22px;">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;">🔴 Batch / Cron Job</div>
+      <div class="code-wrap" style="padding:10px 14px;font-size:11px;margin-bottom:12px;border-left-color:var(--amber);">
+        <span class="cmd">docker run</span> <span class="val">ubuntu</span> <span class="tag">backup.sh</span>
+      </div>
+      <ul class="bullet-list" style="font-size:11px;">
+        <li>Runs backup → finishes → container stops</li>
+        <li>Used in: cron jobs, data pipelines</li>
+      </ul>
+      <div style="margin-top:10px;padding:5px 10px;font-size:10px;background:rgba(255,184,48,0.07);border:1px solid rgba(255,184,48,0.25);color:var(--amber);letter-spacing:0.1em;">SHORT JOB → EXITS CLEANLY ✅</div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--purple);padding:22px;">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--purple);margin-bottom:10px;">🔴 CI/CD Job</div>
+      <div class="code-wrap" style="padding:10px 14px;font-size:11px;margin-bottom:12px;border-left-color:var(--purple);">
+        <span class="cmd">docker run</span> <span class="val">maven</span> <span class="tag">mvn build</span>
+      </div>
+      <ul class="bullet-list" style="font-size:11px;">
+        <li>Builds code → exits</li>
+        <li>Used in: Jenkins, GitHub Actions</li>
+      </ul>
+      <div style="margin-top:10px;padding:5px 10px;font-size:10px;background:rgba(155,127,244,0.07);border:1px solid rgba(155,127,244,0.25);color:var(--purple);letter-spacing:0.1em;">SHORT JOB → EXITS CLEANLY ✅</div>
+    </div>
+
+  </div>
+
+  <!-- TWO TYPES TABLE -->
+  <div class="table-wrap" style="margin-bottom:24px;">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Behavior</th>
+          <th>Examples</th>
+          <th>Expected in docker ps</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="green">🟢 Long-running</td>
+          <td>Container stays alive indefinitely</td>
+          <td>nginx, flask app, postgres, redis</td>
+          <td class="green">STATUS: Up 3 hours</td>
+        </tr>
+        <tr>
+          <td class="amber">🔴 Short job</td>
+          <td>Container runs → exits cleanly</td>
+          <td>backup.sh, ls, maven build, pytest</td>
+          <td class="amber">STATUS: Exited (0)</td>
+        </tr>
+        <tr>
+          <td class="red">💥 Crash</td>
+          <td>Process fails unexpectedly</td>
+          <td>app bug, missing config, OOM</td>
+          <td class="red">STATUS: Exited (1) or Exited (137)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- CRITICAL EDGE CASE: daemon off -->
+  <div style="background:var(--card);border:1px solid var(--border);padding:28px;margin-bottom:24px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--red);margin-bottom:18px;">💣 Critical Edge Case — Background vs Foreground</div>
+    <div class="compare-grid">
+      <div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-bottom:10px;">❌ Wrong Design</div>
+        <div class="code-wrap" style="border-left-color:var(--red);">
+<span class="tag">CMD</span> <span class="val">["service", "nginx", "start"]</span>
+<br>
+<span class="comment"># What happens:</span>
+<span class="out">service nginx start</span>  <span class="comment">← PID 1</span>
+<span class="out">  └── starts nginx in background</span>
+<span class="out">  └── service command EXITS</span>
+<span class="out">  └── PID 1 is gone</span>
+<span class="out" style="color:var(--red);">  └── Container STOPS ❌</span>
+        </div>
+        <div style="margin-top:10px;font-family:var(--sans);font-size:11px;color:var(--text2);padding:10px 14px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.2);">
+          nginx runs in background → PID 1 (service cmd) exits → container stops even though nginx is technically "running"
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);margin-bottom:10px;">✅ Correct Design</div>
+        <div class="code-wrap" style="border-left-color:var(--green);">
+<span class="tag">CMD</span> <span class="val">["nginx", "-g", "daemon off;"]</span>
+<br>
+<span class="comment"># What happens:</span>
+<span class="out">nginx -g daemon off</span>  <span class="comment">← PID 1</span>
+<span class="out">  └── nginx runs in FOREGROUND</span>
+<span class="out">  └── PID 1 stays alive</span>
+<span class="out" style="color:var(--green);">  └── Container STAYS ALIVE ✅</span>
+        </div>
+        <div style="margin-top:10px;font-family:var(--sans);font-size:11px;color:var(--text2);padding:10px 14px;background:rgba(57,217,138,0.06);border:1px solid rgba(57,217,138,0.2);">
+          <strong style="color:var(--green)">daemon off</strong> forces nginx to run in foreground → stays as PID 1 → container lives
+        </div>
+      </div>
+    </div>
+    <div class="insight sre" style="margin-top:16px;">
+      <div class="insight-icon">🚨</div>
+      <div class="insight-body">
+        <strong>This is a real production gotcha.</strong> Many engineers spend hours debugging why their container "starts but immediately exits" — it's almost always a background/foreground issue. The rule: <strong>whatever CMD runs must stay in the foreground and be PID 1.</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERVIEW GOLD -->
+  <div style="background:var(--card);border:1px solid rgba(155,127,244,0.35);border-left:4px solid var(--purple);padding:26px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--purple);margin-bottom:16px;">🏆 Interview Gold Answer</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--white);margin-bottom:4px;">Q. "Why did the container stop?"</div>
+    <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;margin-top:10px;padding:14px 18px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);">
+      A Docker container runs a single main process as PID 1. When that process exits — for any reason — the container stops. If the process is long-running (like a web server or API), the container stays alive. If it's short-lived (like a script or <code style="color:var(--orange3)">ls</code>), the container exits after execution. This is by design — Docker is not a VM, it's a process runner with isolation.
+    </div>
+    <div style="margin-top:14px;">
+      <div style="font-family:var(--sans);font-size:11px;color:var(--text3);margin-bottom:10px;">Quick-fire follow-ups:</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;font-size:11px;">
+          <span style="color:var(--purple);">Q.</span><span style="color:var(--text2);">Why does nginx container run forever?</span>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;font-size:11px;padding:8px 12px;background:rgba(155,127,244,0.05);border-left:2px solid var(--purple);">
+          <span style="color:var(--green);">A.</span><span style="color:var(--text2);">nginx runs in foreground with <code style="color:var(--orange3)">daemon off</code> — PID 1 never exits.</span>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;font-size:11px;margin-top:4px;">
+          <span style="color:var(--purple);">Q.</span><span style="color:var(--text2);">Why does <code style="color:var(--orange3)">docker run ubuntu ls</code> exit?</span>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;font-size:11px;padding:8px 12px;background:rgba(155,127,244,0.05);border-left:2px solid var(--purple);">
+          <span style="color:var(--green);">A.</span><span style="color:var(--text2);"><code style="color:var(--orange3)">ls</code> is PID 1. It prints output and exits → container stops. Exit code 0 (clean).</span>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;font-size:11px;margin-top:4px;">
+          <span style="color:var(--purple);">Q.</span><span style="color:var(--text2);">Give a real example where container SHOULD exit.</span>
+        </div>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;font-size:11px;padding:8px 12px;background:rgba(155,127,244,0.05);border-left:2px solid var(--purple);">
+          <span style="color:var(--green);">A.</span><span style="color:var(--text2);">Database migrations, backup jobs, CI/CD builds — designed to run and exit cleanly (code 0).</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S9: PID HUNT -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <span class="section-num">09</span>
+    <span class="section-title">FIND CONTAINER PID ON HOST</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- CORE CONCEPT -->
+  <div style="background:rgba(255,107,26,0.07);border:1px solid rgba(255,107,26,0.35);border-left:4px solid var(--orange);padding:24px 28px;margin-bottom:24px;">
+    <div style="font-size:9px;letter-spacing:0.3em;text-transform:uppercase;color:var(--orange);margin-bottom:14px;">🧠 Core Concept</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.9;">
+      When you run <code style="color:var(--orange3)">docker run -d nginx</code> — Docker does <strong style="color:var(--red)">NOT</strong> create a VM.<br>
+      It simply: <strong style="color:var(--green)">creates a process on the host</strong> (nginx) and applies isolation (namespaces + cgroups).<br>
+      That process has a real PID on your EC2/host — you can find it, monitor it, trace it, and even kill it directly.
+    </div>
+  </div>
+
+  <!-- STEP BY STEP + NAMESPACE VISUAL -->
+  <div class="compare-grid" style="margin-bottom:24px;">
+    <div>
+      <div class="code-label">Correct Step-by-Step Flow</div>
+      <div class="code-wrap">
+<span class="comment"># Step 1: Start container</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">--name</span> <span class="val">pid-test</span> <span class="tag">nginx</span>
+
+<span class="comment"># Step 2a: grep method</span>
+<span class="cmd">docker inspect</span> <span class="val">pid-test</span> <span class="flag">| grep</span> <span class="val">'"Pid"'</span>
+<span class="out">  "Pid": 45678,</span>
+
+<span class="comment"># Step 2b: cleaner --format method (preferred)</span>
+<span class="cmd">docker inspect</span> <span class="flag">-f</span> <span class="val">'{{.State.Pid}}'</span> <span class="tag">pid-test</span>
+<span class="out">45678</span>
+
+<span class="comment"># Step 3: verify on host using that real PID</span>
+<span class="cmd">ps</span> <span class="flag">-fp</span> <span class="val">45678</span>
+<span class="out">UID   PID    CMD</span>
+<span class="out" style="color:var(--green);">root  45678  nginx: master process nginx -g daemon off;</span>
+
+<span class="comment"># Step 4: see container's process view</span>
+<span class="cmd">docker top</span> <span class="val">pid-test</span>
+<span class="out">UID   PID  CMD</span>
+<span class="out">root  1    nginx: master process</span>
+      </div>
+
+      <div class="insight sre" style="margin-top:12px;">
+        <div class="insight-icon">⚠️</div>
+        <div class="insight-body">
+          <strong>Common mistake:</strong> <code style="color:var(--orange3)">ps -fp 12345</code> showing nothing means you used a sample number. Always fetch the actual PID dynamically with <code style="color:var(--orange3)">docker inspect -f '{{.State.Pid}}'</code> — never assume the number.
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="visual-arch" style="background:var(--card);">
+        <div class="code-label" style="margin-bottom:20px;">Same Process — Two Views (Namespace Magic)</div>
+        <div style="display:flex;flex-direction:column;gap:0;align-items:stretch;">
+
+          <!-- Host view -->
+          <div style="background:var(--bg3);border:1px solid var(--border2);padding:18px 20px;">
+            <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;">🖥️ Host OS View (ps / top)</div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;font-family:var(--mono);">
+              <div style="color:var(--text2);display:flex;align-items:center;gap:8px;">
+                <span style="color:var(--text3);">├──</span> systemd <span style="color:var(--text3);">(PID 1)</span>
+              </div>
+              <div style="color:var(--text2);display:flex;align-items:center;gap:8px;">
+                <span style="color:var(--text3);">├──</span> sshd <span style="color:var(--text3);">(PID 1234)</span>
+              </div>
+              <div style="color:var(--orange3);display:flex;align-items:center;gap:8px;background:rgba(255,107,26,0.07);padding:5px 8px;border:1px solid rgba(255,107,26,0.25);">
+                <span style="color:var(--orange);">├──</span> nginx <span style="color:var(--orange);">(PID 45678)</span> ← your container
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align:center;padding:10px;font-size:11px;color:var(--text3);border-left:1px solid var(--border2);border-right:1px solid var(--border2);">
+            ↕ same process — different namespace view
+          </div>
+
+          <!-- Container view -->
+          <div style="background:rgba(255,107,26,0.06);border:1px solid rgba(255,107,26,0.3);padding:18px 20px;">
+            <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--orange);margin-bottom:12px;">🐳 Inside Container View (docker top)</div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:11px;font-family:var(--mono);">
+              <div style="color:var(--green);display:flex;align-items:center;gap:8px;background:rgba(57,217,138,0.07);padding:5px 8px;border:1px solid rgba(57,217,138,0.25);">
+                <span style="color:var(--green2);">└──</span> nginx <span style="color:var(--green);">(PID 1)</span> ← looks like PID 1
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:10px;">PID namespace remaps 45678 → 1 inside the container</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;">
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px;text-align:center;">
+            <div style="color:var(--text3);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">docker top</div>
+            <div style="color:var(--orange3);">Container view</div>
+            <div style="color:var(--text2);font-size:10px;margin-top:3px;">PID 1</div>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px;text-align:center;">
+            <div style="color:var(--text3);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:4px;">ps / top</div>
+            <div style="color:var(--blue);">Host view</div>
+            <div style="color:var(--text2);font-size:10px;margin-top:3px;">Real PID (e.g. 45678)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ISOLATION: NAMESPACES + CGROUPS -->
+  <div style="background:var(--card);border:1px solid var(--border);padding:28px;margin-bottom:24px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--purple);margin-bottom:18px;">🔥 Why Does It Feel Like a Separate System? — Isolation</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--blue);margin-bottom:12px;">1. Namespaces (Isolation)</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:11px;">
+            <span style="color:var(--blue);">PID namespace</span><span style="color:var(--text3);"> — </span><span style="color:var(--text2);">separate process list (sees itself as PID 1)</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:11px;">
+            <span style="color:var(--blue);">NET namespace</span><span style="color:var(--text3);"> — </span><span style="color:var(--text2);">separate network interface, IP address</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:11px;">
+            <span style="color:var(--blue);">MNT namespace</span><span style="color:var(--text3);"> — </span><span style="color:var(--text2);">separate filesystem view</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:11px;">
+            <span style="color:var(--blue);">UTS namespace</span><span style="color:var(--text3);"> — </span><span style="color:var(--text2);">separate hostname</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--amber);margin-bottom:12px;">2. Cgroups (Resource Control)</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:11px;">
+            <span style="color:var(--amber);">CPU limits</span><span style="color:var(--text3);"> — </span><span style="color:var(--text2);">max CPU % this process can use</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:11px;">
+            <span style="color:var(--amber);">Memory limits</span><span style="color:var(--text3);"> — </span><span style="color:var(--text2);">max RAM allowed (OOMKill if exceeded)</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:11px;">
+            <span style="color:var(--amber);">Disk I/O</span><span style="color:var(--text3);"> — </span><span style="color:var(--text2);">read/write bandwidth throttling</span>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:10px 14px;font-size:11px;">
+            <span style="color:var(--amber);">Network</span><span style="color:var(--text3);"> — </span><span style="color:var(--text2);">bandwidth limits per container</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:14px 18px;background:var(--bg2);border:1px solid var(--border2);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;text-align:center;">
+      Same host → but <strong style="color:var(--orange3);">namespaces</strong> create the illusion of a separate environment<br>
+      and <strong style="color:var(--amber);">cgroups</strong> enforce resource boundaries. That's the entire magic of containers.
+    </div>
+  </div>
+
+  <!-- 4 SRE USE CASES -->
+  <div class="code-label" style="margin-bottom:14px;">🚨 Real SRE Use Cases — Why You Need the Host PID</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:24px;">
+
+    <div class="scenario" style="margin-bottom:0;">
+      <div class="scenario-title">Case 1 — High CPU Usage</div>
+      <div class="code-wrap" style="font-size:11px;margin-bottom:10px;">
+<span class="cmd">top</span>
+<span class="out" style="color:var(--red);">PID 45678 → 95% CPU 🚨</span>
+<br>
+<span class="comment"># Map that PID to a container</span>
+<span class="cmd">docker inspect</span> <span class="flag">-f</span> <span class="val">'{{.State.Pid}}'</span> <span class="tag">pid-test</span>
+<span class="out">45678  ← matches! found the culprit</span>
+      </div>
+      <div style="font-family:var(--sans);font-size:11px;color:var(--text2);">See high CPU in <code>top</code> → match PID → identify which container is misbehaving</div>
+    </div>
+
+    <div class="scenario" style="margin-bottom:0;">
+      <div class="scenario-title">Case 2 — Memory Leak</div>
+      <div class="code-wrap" style="font-size:11px;margin-bottom:10px;">
+<span class="comment"># Monitor memory of specific PID</span>
+<span class="cmd">top</span> <span class="flag">-p</span> <span class="val">45678</span>
+<span class="out">PID   MEM%  RES</span>
+<span class="out">45678  2%   80MB</span>
+<span class="out" style="color:var(--amber);">45678  8%   400MB  ← growing!</span>
+<span class="out" style="color:var(--red);">45678  18%  900MB  ← leak 🚨</span>
+      </div>
+      <div style="font-family:var(--sans);font-size:11px;color:var(--text2);">Watch RES (resident memory) growing over time = memory leak evidence</div>
+    </div>
+
+    <div class="scenario" style="margin-bottom:0;">
+      <div class="scenario-title">Case 3 — Deep Debug with strace</div>
+      <div class="code-wrap" style="font-size:11px;margin-bottom:10px;">
+<span class="comment"># Trace ALL system calls of the process</span>
+<span class="cmd">strace</span> <span class="flag">-p</span> <span class="val">45678</span>
+<span class="out">epoll_wait(...)              ← waiting</span>
+<span class="out">read(5, ...) = -1 EAGAIN   ← no data</span>
+<span class="out">connect(...) = -1 ETIMEDOUT ← network stuck!</span>
+      </div>
+      <div style="font-family:var(--sans);font-size:11px;color:var(--text2);">strace shows every OS-level call the process makes — network, file, memory operations</div>
+    </div>
+
+    <div class="scenario" style="margin-bottom:0;">
+      <div class="scenario-title">Case 4 — Last Resort Kill</div>
+      <div class="code-wrap" style="font-size:11px;margin-bottom:10px;">
+<span class="comment"># Nuclear option — kill the process directly</span>
+<span class="cmd">kill</span> <span class="flag">-9</span> <span class="val">45678</span>
+
+<span class="comment"># Container will stop immediately</span>
+<span class="cmd">docker ps</span> <span class="flag">-a</span>
+<span class="out" style="color:var(--red);">pid-test  Exited (137) ← killed</span>
+      </div>
+      <div style="font-family:var(--sans);font-size:11px;color:var(--text2);">Killing host PID = killing the container. Exit code 137 = SIGKILL. Use only when <code>docker kill</code> fails.</div>
+    </div>
+
+  </div>
+
+  <!-- STRACE DEEP DIVE -->
+  <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--blue);padding:28px;margin-bottom:24px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--blue);margin-bottom:18px;">🔬 What is strace? — SRE Superpower</div>
+
+    <div style="font-family:var(--sans);font-size:13px;color:var(--white);margin-bottom:6px;">strace = system call tracer</div>
+    <div style="font-family:var(--sans);font-size:12px;color:var(--text2);margin-bottom:20px;line-height:1.7;">
+      Every program (nginx, python, java) talks to the Linux kernel using <strong style="color:var(--blue);">system calls</strong>.<br>
+      strace intercepts and shows you every single one in real time — file opens, network calls, memory allocation, everything.
+    </div>
+
+    <div class="compare-grid">
+      <div>
+        <div class="code-label">Running strace on ls</div>
+        <div class="code-wrap" style="font-size:11px;">
+<span class="cmd">strace</span> <span class="val">ls</span>
+
+<span class="comment"># You'll see calls like:</span>
+<span class="out">open("/etc/ld.so.cache", O_RDONLY) = 3</span>
+<span class="out">read(3, ...)             ← reading file</span>
+<span class="out">write(1, "file1 file2")  ← printing output</span>
+<span class="out">close(3)                 ← closing file</span>
+<span class="out">exit_group(0)            ← clean exit</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="code-label">3 Real Diagnostic Patterns</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+
+          <div style="background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--red);padding:12px 16px;">
+            <div style="font-size:10px;color:var(--red);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">🚨 App Stuck / Hanging</div>
+            <div class="code-wrap" style="padding:8px 12px;font-size:10px;margin-bottom:6px;">
+<span class="cmd">strace</span> <span class="flag">-p</span> <span class="val">&lt;PID&gt;</span>
+<span class="out" style="color:var(--red);">connect(...) = waiting...</span>
+            </div>
+            <div style="font-size:11px;color:var(--text2);">App stuck waiting for a network connection</div>
+          </div>
+
+          <div style="background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--amber);padding:12px 16px;">
+            <div style="font-size:10px;color:var(--amber);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">⚠️ File Not Found</div>
+            <div class="code-wrap" style="padding:8px 12px;font-size:10px;margin-bottom:6px;">
+<span class="out">open("/app/config.yaml") = -1 ENOENT</span>
+            </div>
+            <div style="font-size:11px;color:var(--text2);">Missing config file — container can't find it</div>
+          </div>
+
+          <div style="background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--purple);padding:12px 16px;">
+            <div style="font-size:10px;color:var(--purple);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;">🔒 Permission Denied</div>
+            <div class="code-wrap" style="padding:8px 12px;font-size:10px;margin-bottom:6px;">
+<span class="out">open("/data/file") = -1 EACCES</span>
+            </div>
+            <div style="font-size:11px;color:var(--text2);">Process lacks permission — wrong USER or volume chmod</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="interview-badge" style="margin-top:16px;display:inline-flex;">
+      💬 Interview: "strace is a Linux tool to trace system calls, helping identify stuck processes, missing files, permission errors, and network issues at the OS level."
+    </div>
+  </div>
+
+  <!-- MEMORY LEAK DEEP DIVE -->
+  <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);padding:28px;margin-bottom:24px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--red);margin-bottom:18px;">💧 What is a Memory Leak? — Real Production Explanation</div>
+
+    <div class="compare-grid" style="margin-bottom:20px;">
+      <div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--green);margin-bottom:10px;">✅ Normal Memory Behaviour</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;font-family:var(--mono);">
+          <div style="padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--green);color:var(--text2);">
+            1. Allocate memory <span style="color:var(--green)">→ use it</span>
+          </div>
+          <div style="padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--green);color:var(--text2);">
+            2. Work done <span style="color:var(--green)">→ free it</span>
+          </div>
+          <div style="padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--green);color:var(--text2);">
+            3. Memory returns to OS <span style="color:var(--green)">→ reused</span>
+          </div>
+        </div>
+        <div style="margin-top:10px;text-align:center;padding:8px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);font-size:11px;color:var(--green);">Memory stays flat over time 📈→ flat</div>
+      </div>
+      <div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-bottom:10px;">❌ Memory Leak Behaviour</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;font-family:var(--mono);">
+          <div style="padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--amber);color:var(--text2);">
+            1. Allocate memory <span style="color:var(--amber)">→ use it</span>
+          </div>
+          <div style="padding:8px 14px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.3);border-left:2px solid var(--red);color:var(--red);">
+            2. Work done <span style="color:var(--red)">→ ❌ NOT freed</span>
+          </div>
+          <div style="padding:8px 14px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.3);border-left:2px solid var(--red);color:var(--red);">
+            3. Memory accumulates <span style="color:var(--red)">→ keeps growing</span>
+          </div>
+        </div>
+        <div style="margin-top:10px;text-align:center;padding:8px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.3);font-size:11px;color:var(--red);">Memory grows until crash 📈→ OOMKilled 💥</div>
+      </div>
+    </div>
+
+    <!-- Memory leak timeline visual -->
+    <div style="margin-bottom:20px;">
+      <div class="code-label">Real Incident Timeline — API Pod Memory Leak</div>
+      <div style="background:var(--bg2);border:1px solid var(--border);padding:20px;overflow-x:auto;">
+        <div style="display:flex;align-items:flex-end;gap:6px;height:80px;min-width:400px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:40px;background:rgba(57,217,138,0.6);border:1px solid var(--green);" style="height:8px;"></div>
+            <div style="width:40px;height:8px;background:rgba(57,217,138,0.6);border:1px solid var(--green);"></div>
+            <div style="font-size:9px;color:var(--text3);margin-top:4px;">Start<br>100MB</div>
+          </div>
+          <div style="flex:1;display:flex;align-items:flex-end;gap:4px;">
+            <div style="flex:1;background:linear-gradient(to top,rgba(57,217,138,0.4),rgba(255,184,48,0.4));border:1px solid rgba(255,184,48,0.4);border-radius:1px;" style="height:30px;"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:40px;height:30px;background:rgba(255,184,48,0.5);border:1px solid var(--amber);"></div>
+            <div style="font-size:9px;color:var(--text3);margin-top:4px;">1hr<br>500MB</div>
+          </div>
+          <div style="flex:1;display:flex;align-items:flex-end;">
+            <div style="width:100%;background:linear-gradient(to top,rgba(255,184,48,0.4),rgba(255,71,87,0.4));border:1px solid rgba(255,71,87,0.4);" style="height:50px;"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:40px;height:55px;background:rgba(255,71,87,0.5);border:1px solid var(--red);"></div>
+            <div style="font-size:9px;color:var(--text3);margin-top:4px;">3hr<br>1.5GB</div>
+          </div>
+          <div style="flex:1;display:flex;align-items:flex-end;">
+            <div style="width:100%;background:rgba(255,71,87,0.3);border:1px solid var(--red);border-top:3px solid var(--red);" style="height:70px;"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <div style="width:40px;height:72px;background:rgba(255,71,87,0.7);border:2px solid var(--red);position:relative;">
+              <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:14px;">💥</div>
+            </div>
+            <div style="font-size:9px;color:var(--red);margin-top:4px;text-align:center;">OOMKilled<br>Exit 137</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code examples of leaks -->
+    <div style="margin-bottom:16px;">
+      <div class="code-label">Real Code Examples of Memory Leaks</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+
+        <div style="background:var(--bg2);border:1px solid var(--border);padding:16px;">
+          <div style="font-size:9px;color:var(--amber);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">🐍 Python</div>
+          <div class="code-wrap" style="font-size:10px;padding:10px 12px;border-left-color:var(--amber);">
+<span class="out">data = []</span>
+<span class="out">while True:</span>
+<span class="out" style="color:var(--red);">    data.append("leak")</span>
+<span class="comment"># list grows forever</span>
+          </div>
+        </div>
+
+        <div style="background:var(--bg2);border:1px solid var(--border);padding:16px;">
+          <div style="font-size:9px;color:var(--red);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">☕ Java</div>
+          <div class="code-wrap" style="font-size:10px;padding:10px 12px;border-left-color:var(--red);">
+<span class="comment">// Objects held in static list</span>
+<span class="out">static List cache = ...;</span>
+<span class="out">cache.add(object);</span>
+<span class="comment">// never removed = leak</span>
+          </div>
+        </div>
+
+        <div style="background:var(--bg2);border:1px solid var(--border);padding:16px;">
+          <div style="font-size:9px;color:var(--blue);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px;">🟨 Node.js</div>
+          <div class="code-wrap" style="font-size:10px;padding:10px 12px;border-left-color:var(--blue);">
+<span class="comment">// Event listener not removed</span>
+<span class="out">emitter.on('data', handler);</span>
+<span class="comment">// fires endlessly → grows</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Docker OOM -->
+    <div style="background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.3);padding:20px;margin-bottom:0;">
+      <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-bottom:12px;">💥 What Happens in Docker When Memory Limit is Hit</div>
+      <div class="code-wrap" style="font-size:11px;border-left-color:var(--red);">
+<span class="comment"># Set memory limit to 100MB</span>
+<span class="cmd">docker run</span> <span class="flag">-m</span> <span class="val">100m</span> <span class="tag">myapp</span>
+
+<span class="comment"># App slowly leaks memory...</span>
+<span class="out">docker stats</span>
+<span class="out">MEM USAGE:  45MB / 100MB</span>
+<span class="out">MEM USAGE:  80MB / 100MB  ← growing</span>
+<span class="out" style="color:var(--red);">MEM USAGE:  100MB / 100MB ← LIMIT HIT</span>
+
+<span class="comment"># Linux OOM Killer fires</span>
+<span class="cmd">docker inspect</span> <span class="val">myapp</span>
+<span class="out" style="color:var(--red);">  "OOMKilled": true,</span>
+<span class="out" style="color:var(--red);">  "ExitCode": 137</span>
+      </div>
+      <div style="margin-top:12px;font-family:var(--sans);font-size:11px;color:var(--text2);">
+        Memory limit hit → Linux OOM Killer fires → kills the container → exit code 137 → you see "OOMKilled: true" in inspect
+      </div>
+    </div>
+
+    <div style="margin-top:14px;padding:14px 18px;background:rgba(74,158,255,0.06);border:1px solid rgba(74,158,255,0.2);border-left:3px solid var(--blue);">
+      <div style="font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--blue);margin-bottom:8px;">🔗 strace + Memory Leak = Advanced Debugging</div>
+      <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">
+        Use <code style="color:var(--orange3)">top -p &lt;PID&gt;</code> to watch memory growing → confirm leak.<br>
+        Use <code style="color:var(--orange3)">strace -p &lt;PID&gt;</code> to see repeated <code>mmap/brk</code> calls → allocation without free → leak evidence at OS level.
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMANDS COMPARISON TABLE -->
+  <div class="table-wrap" style="margin-bottom:24px;">
+    <table class="comp-table">
+      <thead>
+        <tr><th>Command</th><th>View</th><th>What You See</th><th>SRE Use Case</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code style="color:var(--orange3)">docker top &lt;id&gt;</code></td>
+          <td class="orange">Container view</td>
+          <td>PID 1 (namespace-mapped)</td>
+          <td>Quick process check inside container</td>
+        </tr>
+        <tr>
+          <td><code style="color:var(--orange3)">ps -fp &lt;PID&gt;</code></td>
+          <td class="blue">Host view</td>
+          <td>Real host PID, full command</td>
+          <td>Verify process on host after inspect</td>
+        </tr>
+        <tr>
+          <td><code style="color:var(--orange3)">top -p &lt;PID&gt;</code></td>
+          <td class="blue">Host view</td>
+          <td>CPU%, MEM%, RES live</td>
+          <td>Monitor memory leak, CPU spike</td>
+        </tr>
+        <tr>
+          <td><code style="color:var(--orange3)">strace -p &lt;PID&gt;</code></td>
+          <td class="purple">OS level</td>
+          <td>Every system call in real time</td>
+          <td>App hanging, file errors, network stuck</td>
+        </tr>
+        <tr>
+          <td><code style="color:var(--orange3)">kill -9 &lt;PID&gt;</code></td>
+          <td class="red">Host level</td>
+          <td>Process killed → container exits 137</td>
+          <td>Last resort when docker kill fails</td>
+        </tr>
+        <tr>
+          <td><code style="color:var(--orange3)">docker stats</code></td>
+          <td class="green">Container view</td>
+          <td>CPU%, MEM%, NET I/O live</td>
+          <td>All containers at a glance</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- INTERVIEW ANSWERS -->
+  <div style="background:var(--card);border:1px solid rgba(155,127,244,0.35);border-left:4px solid var(--purple);padding:26px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--purple);margin-bottom:18px;">🏆 Interview-Level Answers</div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:8px;">Q. "What is a container internally?"</div>
+        <div style="padding:12px 16px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">
+          A container is a process running on the host system, isolated using <strong style="color:var(--blue)">Linux namespaces</strong> (PID, NET, MNT, UTS) and resource-controlled using <strong style="color:var(--amber)">cgroups</strong>. It's not a VM — it shares the host kernel.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:8px;">Q. "How do you debug a container at the OS level?"</div>
+        <div style="padding:12px 16px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">
+          I use <code style="color:var(--orange3)">docker inspect -f '{{.State.Pid}}'</code> to get the host PID, then use Linux tools: <code style="color:var(--orange3)">ps</code> to verify the process, <code style="color:var(--orange3)">top -p</code> to monitor resources, and <code style="color:var(--orange3)">strace -p</code> for system call tracing when the app is hanging or behaving unexpectedly.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:8px;">Q. "What is a memory leak and how do you detect it in Docker?"</div>
+        <div style="padding:12px 16px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">
+          A memory leak is when a process allocates memory but never frees it, causing continuous growth until the OS kills it. In Docker, I detect it with <code style="color:var(--orange3)">docker stats</code> (watching MEM% grow) or <code style="color:var(--orange3)">top -p &lt;PID&gt;</code> on the host. If OOMKilled, <code style="color:var(--orange3)">docker inspect</code> will show <code style="color:var(--red)">"OOMKilled": true</code> and ExitCode 137.
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:18px;padding:14px 18px;background:var(--bg2);border:1px solid var(--border2);font-family:var(--sans);font-size:12px;color:var(--text2);text-align:center;line-height:1.8;">
+      🧠 <strong style="color:var(--orange3);">Final truth:</strong> Docker is not magic.<br>
+      <strong style="color:var(--green)">Container = process + isolation.</strong><br>
+      That's why it's fast, lightweight, and easy to scale.
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ══════════════════════════════════════════ -->
+<!-- S10: FINAL TAKEAWAYS -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <span class="section-num">10</span>
+    <span class="section-title">FINAL SRE TAKEAWAYS</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="takeaway-grid">
+    <div class="takeaway">
+      <span class="takeaway-icon">🏗️</span>
+      <div class="takeaway-title">Container = Process</div>
+      <div class="takeaway-body">A container is not a mini VM. It's a process with restricted visibility via Linux namespaces. When PID 1 exits, the container stops. Period.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">🔌</span>
+      <div class="takeaway-title">Client-Server Split</div>
+      <div class="takeaway-body">Docker CLI talks to dockerd via the Unix socket. The daemon does everything. CLI is just a REST client. This matters for remote Docker and CI/CD.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">💾</span>
+      <div class="takeaway-title">Images in /var/lib/docker</div>
+      <div class="takeaway-body">All images, layers, volumes live here. Disk fills up in production. Use <code>docker system prune</code> to clean. Monitor this path on your servers.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">🚦</span>
+      <div class="takeaway-title">Stop Before Kill</div>
+      <div class="takeaway-body">Always try SIGTERM (stop) first. Give the app a chance to clean up. SIGKILL (kill) is for emergencies only — exit code 137 is your evidence.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">🔍</span>
+      <div class="takeaway-title">Debug Flow Matters</div>
+      <div class="takeaway-body">ps -a → logs → inspect → exec. That's your 3am production incident flow. The faster you run this, the faster you resolve outages.</div>
+    </div>
+    <div class="takeaway">
+      <span class="takeaway-icon">🌐</span>
+      <div class="takeaway-title">Port Mapping = Forwarding</div>
+      <div class="takeaway-body">-p 8080:80 means: traffic hitting host port 8080 → forwards to container port 80. The host port must be free. Container port is internal only.</div>
+    </div>
+  </div>
+
+  <!-- Interview bullets -->
+  <div style="margin-top:32px;background:var(--card);border:1px solid rgba(155,127,244,0.3);padding:28px;border-top:2px solid var(--purple);">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--purple);margin-bottom:20px;">💬 Interview-Ready One-Liners</div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;">
+        <span style="font-size:11px;color:var(--text3);">Q.</span>
+        <span style="font-size:12px;color:var(--white);">What is a Docker container?</span>
+      </div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;background:rgba(155,127,244,0.06);padding:10px 12px;border-left:2px solid var(--purple);">
+        <span style="font-size:11px;color:var(--purple);">A.</span>
+        <span style="font-size:12px;color:var(--text2);">An isolated process running on the host OS, sharing the kernel but with its own namespace for PID, network, filesystem, and IPC.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;margin-top:8px;">
+        <span style="font-size:11px;color:var(--text3);">Q.</span>
+        <span style="font-size:12px;color:var(--white);">Difference between docker stop and docker kill?</span>
+      </div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;background:rgba(155,127,244,0.06);padding:10px 12px;border-left:2px solid var(--purple);">
+        <span style="font-size:11px;color:var(--purple);">A.</span>
+        <span style="font-size:12px;color:var(--text2);">stop sends SIGTERM (graceful, exit 0), kill sends SIGKILL (force, exit 137). Always use stop in production — kill only when container is frozen.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;margin-top:8px;">
+        <span style="font-size:11px;color:var(--text3);">Q.</span>
+        <span style="font-size:12px;color:var(--white);">Why is the container lifecycle tied to PID 1?</span>
+      </div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;background:rgba(155,127,244,0.06);padding:10px 12px;border-left:2px solid var(--purple);">
+        <span style="font-size:11px;color:var(--purple);">A.</span>
+        <span style="font-size:12px;color:var(--text2);">Docker starts the container's main process as PID 1. When it exits, the container stops. There's no init system — the container IS the process.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Completion banner -->
+  <div style="margin-top:24px;background:linear-gradient(135deg,rgba(57,217,138,0.08),rgba(255,107,26,0.06));border:1px solid rgba(57,217,138,0.3);padding:28px;text-align:center;">
+    <div style="font-size:32px;margin-bottom:8px;">🏁</div>
+    <div style="font-family:var(--display);font-size:28px;letter-spacing:0.06em;color:var(--white);margin-bottom:8px;">DAY 1 — COMPLETE</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.7;max-width:520px;margin:0 auto;">
+      You've seen Docker's internals, run real containers, debugged crashes, and hunted down PIDs on the host. That's SRE thinking. Day 2 is images and container deep dive.
+    </div>
+    <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <span class="chip green">✅ Architecture</span>
+      <span class="chip green">✅ Lifecycle</span>
+      <span class="chip green">✅ Stop vs Kill</span>
+      <span class="chip green">✅ Debug Flow</span>
+      <span class="chip green">✅ PID Hunt</span>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /sections -->
+</div><!-- /page -->
+
+<script>
+// Intersection Observer for section animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+// Active nav link highlighting
+const sections = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+
+const navObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(l => l.style.color = '');
+      const active = document.querySelector(`.nav-link[href="#${entry.target.id}"]`);
+      if (active) active.style.color = 'var(--orange)';
+    }
+  });
+}, { threshold: 0.4 });
+
+sections.forEach(s => navObserver.observe(s));
+</script>
+</body>
+</html>

@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 3 — Dockerfile Mastery</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #060810;
+  --bg2:     #0c0f1a;
+  --bg3:     #101422;
+  --card:    #0b0e18;
+  --border:  #181e30;
+  --border2: #202840;
+  --lime:    #aaff00;
+  --lime2:   #88cc00;
+  --lime3:   #ccff55;
+  --green:   #39d98a;
+  --green2:  #1fa65c;
+  --red:     #ff4757;
+  --blue:    #4a9eff;
+  --purple:  #9b7ff4;
+  --amber:   #ffb830;
+  --orange:  #ff6b1a;
+  --orange3: #ff9a5c;
+  --teal:    #00e5c8;
+  --text:    #c4cbe0;
+  --text2:   #6b748a;
+  --text3:   #3a4055;
+  --white:   #f0f3ff;
+  --mono:    'IBM Plex Mono', monospace;
+  --sans:    'IBM Plex Sans', sans-serif;
+  --display: 'Bebas Neue', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);overflow-x:hidden;}
+
+/* BACKGROUND */
+body::before{content:'';position:fixed;inset:0;
+  background-image:
+    radial-gradient(ellipse at 10% 10%, rgba(170,255,0,0.04) 0%,transparent 55%),
+    radial-gradient(ellipse at 90% 90%, rgba(74,158,255,0.03) 0%,transparent 55%),
+    linear-gradient(rgba(170,255,0,0.01) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(170,255,0,0.01) 1px,transparent 1px);
+  background-size:100% 100%,100% 100%,56px 56px,56px 56px;
+  pointer-events:none;z-index:0;}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.page{position:relative;z-index:1;}
+
+/* NAV */
+.topnav{position:sticky;top:0;z-index:100;background:rgba(6,8,16,0.94);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;height:50px;overflow-x:auto;gap:0;}
+.nav-brand{font-family:var(--display);font-size:18px;letter-spacing:0.08em;color:var(--lime);margin-right:28px;white-space:nowrap;flex-shrink:0;text-shadow:0 0 20px rgba(170,255,0,0.3);}
+.nav-links{display:flex;gap:2px;flex-shrink:0;}
+.nav-link{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text2);padding:5px 11px;text-decoration:none;transition:all 0.2s;white-space:nowrap;border:1px solid transparent;}
+.nav-link:hover{color:var(--lime);border-color:rgba(170,255,0,0.3);background:rgba(170,255,0,0.04);}
+
+/* HERO */
+.hero{padding:64px 48px 48px;max-width:1160px;margin:0 auto;animation:fadeUp 0.7s ease forwards;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+.hero-eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.hero-tag{font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--lime);border:1px solid rgba(170,255,0,0.4);padding:4px 14px;background:rgba(170,255,0,0.06);}
+.hero-date{font-size:10px;letter-spacing:0.2em;color:var(--text3);text-transform:uppercase;}
+h1{font-family:var(--display);font-size:clamp(48px,7.5vw,96px);letter-spacing:0.04em;color:var(--white);line-height:0.93;margin-bottom:6px;}
+h1 .accent{color:var(--lime);text-shadow:0 0 40px rgba(170,255,0,0.25);}
+.hero-sub{font-family:var(--sans);font-size:14px;color:var(--text2);letter-spacing:0.04em;margin-top:16px;max-width:600px;line-height:1.75;}
+.hero-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px;}
+.chip{font-size:10px;letter-spacing:0.13em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--border2);color:var(--text2);}
+.chip.lime{border-color:rgba(170,255,0,0.4);color:var(--lime);background:rgba(170,255,0,0.05);}
+.chip.green{border-color:rgba(57,217,138,0.4);color:var(--green);background:rgba(57,217,138,0.05);}
+.chip.red{border-color:rgba(255,71,87,0.4);color:var(--red);background:rgba(255,71,87,0.05);}
+.chip.blue{border-color:rgba(74,158,255,0.4);color:var(--blue);background:rgba(74,158,255,0.05);}
+.chip.amber{border-color:rgba(255,184,48,0.4);color:var(--amber);background:rgba(255,184,48,0.05);}
+.chip.purple{border-color:rgba(155,127,244,0.4);color:var(--purple);background:rgba(155,127,244,0.05);}
+
+/* DIVIDER */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),var(--lime),var(--border2),transparent);margin:0 48px;opacity:0.4;}
+
+/* SECTIONS */
+.sections{max-width:1160px;margin:0 auto;padding:0 28px 80px;}
+.section{padding:52px 0 0;opacity:0;transform:translateY(20px);transition:opacity 0.5s ease,transform 0.5s ease;}
+.section.visible{opacity:1;transform:translateY(0);}
+.section-header{display:flex;align-items:center;gap:14px;margin-bottom:28px;}
+.section-num{font-family:var(--display);font-size:12px;letter-spacing:0.2em;color:var(--lime);opacity:0.6;}
+.section-title{font-family:var(--display);font-size:clamp(20px,3vw,30px);letter-spacing:0.06em;color:var(--white);}
+.section-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border2),transparent);}
+
+/* GRIDS */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:720px){.two-col,.three-col{grid-template-columns:1fr;}}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);padding:24px;position:relative;overflow:hidden;}
+.card.lime{border-top:2px solid var(--lime);}
+.card.green{border-top:2px solid var(--green);}
+.card.red{border-top:2px solid var(--red);}
+.card.blue{border-top:2px solid var(--blue);}
+.card.amber{border-top:2px solid var(--amber);}
+.card.purple{border-top:2px solid var(--purple);}
+.card.orange{border-top:2px solid var(--orange);}
+.card.teal{border-top:2px solid var(--teal);}
+.card-label{font-size:9px;letter-spacing:0.28em;text-transform:uppercase;margin-bottom:12px;}
+.card-label.lime{color:var(--lime);}
+.card-label.green{color:var(--green);}
+.card-label.red{color:var(--red);}
+.card-label.blue{color:var(--blue);}
+.card-label.amber{color:var(--amber);}
+.card-label.purple{color:var(--purple);}
+.card-label.orange{color:var(--orange3);}
+.card-label.teal{color:var(--teal);}
+.card-title{font-family:var(--display);font-size:24px;letter-spacing:0.05em;color:var(--white);margin-bottom:14px;}
+
+/* BULLETS */
+.blist{list-style:none;display:flex;flex-direction:column;gap:7px;}
+.blist li{font-size:12px;color:var(--text);line-height:1.5;display:flex;align-items:flex-start;gap:9px;}
+.blist li::before{content:'▸';color:var(--lime);flex-shrink:0;margin-top:1px;font-size:10px;}
+.blist.green-dot li::before{color:var(--green);}
+.blist.red-dot li::before{color:var(--red);}
+.blist.blue-dot li::before{color:var(--blue);}
+.blist.amber-dot li::before{color:var(--amber);}
+
+/* CODE */
+.code-label{font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--text3);margin-bottom:9px;}
+.code-wrap{background:#08090f;border:1px solid var(--border);border-left:3px solid var(--lime);padding:18px 22px;font-size:12px;line-height:1.95;overflow-x:auto;}
+.code-wrap .cm{color:var(--text3);}
+.code-wrap .cmd{color:var(--lime3);}
+.code-wrap .flag{color:var(--blue);}
+.code-wrap .val{color:var(--green);}
+.code-wrap .out{color:var(--text2);}
+.code-wrap .tag{color:var(--purple);}
+.code-wrap .kw{color:var(--teal);}
+.code-wrap .str{color:var(--amber);}
+.code-wrap .err{color:var(--red);}
+.code-wrap .ok{color:var(--green);}
+.code-wrap.green-b{border-left-color:var(--green);}
+.code-wrap.red-b{border-left-color:var(--red);}
+.code-wrap.blue-b{border-left-color:var(--blue);}
+.code-wrap.amber-b{border-left-color:var(--amber);}
+.code-wrap.purple-b{border-left-color:var(--purple);}
+.code-wrap.teal-b{border-left-color:var(--teal);}
+
+/* TABLE */
+.tbl-wrap{background:var(--card);border:1px solid var(--border);overflow:hidden;}
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{text-align:left;padding:10px 14px;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);font-weight:600;}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text);line-height:1.5;vertical-align:top;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(255,255,255,0.012);}
+.tbl td:first-child{color:var(--text2);font-weight:500;}
+.tbl td.lime{color:var(--lime);}
+.tbl td.green{color:var(--green);}
+.tbl td.red{color:var(--red);}
+.tbl td.blue{color:var(--blue);}
+.tbl td.amber{color:var(--amber);}
+.tbl td.purple{color:var(--purple);}
+.tbl td.teal{color:var(--teal);}
+
+/* INSIGHT */
+.insight{display:flex;gap:14px;align-items:flex-start;padding:14px 18px;margin-top:14px;border-left:3px solid var(--lime);background:rgba(170,255,0,0.04);border:1px solid rgba(170,255,0,0.18);border-left-width:3px;}
+.insight.sre{border-left-color:var(--red);background:rgba(255,71,87,0.04);border-color:rgba(255,71,87,0.18);}
+.insight.green{border-left-color:var(--green);background:rgba(57,217,138,0.04);border-color:rgba(57,217,138,0.18);}
+.insight.blue{border-left-color:var(--blue);background:rgba(74,158,255,0.04);border-color:rgba(74,158,255,0.18);}
+.insight.amber{border-left-color:var(--amber);background:rgba(255,184,48,0.04);border-color:rgba(255,184,48,0.18);}
+.insight.purple{border-left-color:var(--purple);background:rgba(155,127,244,0.04);border-color:rgba(155,127,244,0.18);}
+.insight.teal{border-left-color:var(--teal);background:rgba(0,229,200,0.04);border-color:rgba(0,229,200,0.18);}
+.insight-icon{font-size:17px;flex-shrink:0;margin-top:1px;}
+.insight-body{font-size:12px;color:var(--text2);line-height:1.75;}
+.insight-body strong{color:var(--lime3);}
+.insight.sre .insight-body strong{color:var(--red);}
+.insight.green .insight-body strong{color:var(--green);}
+.insight.blue .insight-body strong{color:var(--blue);}
+.insight.amber .insight-body strong{color:var(--amber);}
+.insight.purple .insight-body strong{color:var(--purple);}
+.insight.teal .insight-body strong{color:var(--teal);}
+
+/* INTERVIEW BADGE */
+.ibadge{display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:0.12em;padding:5px 12px;margin-top:11px;border:1px solid rgba(155,127,244,0.4);color:var(--purple);background:rgba(155,127,244,0.06);}
+
+/* SCENARIO */
+.scenario{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);padding:22px;margin-bottom:14px;}
+.scenario-title{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--red);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.scenario-title::before{content:'⚠';font-size:11px;}
+.scenario.amber{border-left-color:var(--amber);}
+.scenario.amber .scenario-title{color:var(--amber);}
+.scenario.lime{border-left-color:var(--lime);}
+.scenario.lime .scenario-title{color:var(--lime);}
+.scenario.green{border-left-color:var(--green);}
+.scenario.green .scenario-title{color:var(--green);}
+
+/* GAP */
+.gap-12{margin-bottom:12px;}
+.gap-16{margin-bottom:16px;}
+.gap-20{margin-bottom:20px;}
+.gap-24{margin-bottom:24px;}
+
+/* FLOW ROW */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:0;}
+.flow-node{background:var(--bg3);border:1px solid var(--border2);padding:9px 16px;font-size:11px;color:var(--text);white-space:nowrap;transition:all 0.2s;}
+.flow-node.lime{border-color:rgba(170,255,0,0.4);color:var(--lime);background:rgba(170,255,0,0.06);}
+.flow-node.green{border-color:rgba(57,217,138,0.4);color:var(--green);background:rgba(57,217,138,0.06);}
+.flow-node.red{border-color:rgba(255,71,87,0.4);color:var(--red);background:rgba(255,71,87,0.06);}
+.flow-node.blue{border-color:rgba(74,158,255,0.4);color:var(--blue);background:rgba(74,158,255,0.06);}
+.flow-node.amber{border-color:rgba(255,184,48,0.4);color:var(--amber);background:rgba(255,184,48,0.06);}
+.flow-arrow{font-size:16px;color:var(--text3);margin:0 6px;flex-shrink:0;}
+.flow-arrow.lime{color:var(--lime);}
+.flow-arrow.green{color:var(--green);}
+
+/* CACHE STEP */
+.cache-step{display:flex;align-items:stretch;gap:0;margin-bottom:4px;}
+.cache-num{width:28px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3);flex-shrink:0;}
+.cache-block{flex:1;padding:9px 14px;font-size:11px;border:1px solid var(--border);background:var(--bg2);}
+.cache-block.cached{background:rgba(57,217,138,0.06);border-color:rgba(57,217,138,0.28);color:var(--green);}
+.cache-block.rebuild{background:rgba(255,71,87,0.06);border-color:rgba(255,71,87,0.28);color:var(--red);}
+.cache-badge{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;margin-left:8px;opacity:0.85;}
+
+/* BIND VISUAL */
+.bind-box{border:1px solid var(--border);padding:20px;text-align:center;position:relative;}
+.bind-ip{font-family:var(--display);font-size:32px;letter-spacing:0.06em;display:block;margin:10px 0;}
+.bind-ip.bad{color:var(--red);}
+.bind-ip.good{color:var(--green);}
+
+/* STEPS LIST */
+.steps{display:flex;flex-direction:column;gap:0;}
+.step{display:flex;gap:14px;align-items:flex-start;position:relative;padding-bottom:0;}
+.step:not(:last-child)::before{content:'';position:absolute;left:13px;top:28px;bottom:0;width:1px;background:var(--border);}
+.step-num{width:26px;height:26px;flex-shrink:0;border:1px solid var(--border2);background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--lime);position:relative;z-index:1;}
+.step-body{padding:3px 0 20px;}
+.step-title{font-size:12px;font-weight:600;color:var(--white);margin-bottom:3px;}
+.step-desc{font-size:11px;color:var(--text2);line-height:1.65;}
+.step-code{margin-top:7px;background:var(--bg);border:1px solid var(--border);padding:6px 12px;font-size:11px;color:var(--green);display:inline-block;}
+
+/* SIZE BAR */
+.size-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.size-label{width:120px;font-size:11px;color:var(--text2);flex-shrink:0;}
+.size-track{flex:1;height:28px;background:var(--bg3);position:relative;}
+.size-fill{height:100%;display:flex;align-items:center;padding-left:10px;font-size:10px;font-weight:600;letter-spacing:0.08em;}
+.sz-full{background:rgba(255,71,87,0.4);border:1px solid var(--red);color:var(--red);}
+.sz-slim{background:rgba(255,184,48,0.35);border:1px solid var(--amber);color:var(--amber);}
+.sz-alpine{background:rgba(170,255,0,0.35);border:1px solid var(--lime);color:var(--lime);}
+
+/* TAKEAWAY GRID */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.tcard{background:var(--card);border:1px solid var(--border);padding:22px;position:relative;overflow:hidden;}
+.tcard::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--lime),transparent);}
+.tcard-icon{font-size:22px;margin-bottom:10px;display:block;}
+.tcard-title{font-family:var(--display);font-size:17px;letter-spacing:0.05em;color:var(--white);margin-bottom:8px;}
+.tcard-body{font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;}
+
+@media(max-width:600px){.hero{padding:36px 18px 28px;}.sections{padding:0 14px 60px;}.divider{margin:0 18px;}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- NAV -->
+<nav class="topnav">
+  <div class="nav-brand">🐳 DAY 03</div>
+  <div class="nav-links">
+    <a href="#s1" class="nav-link">WORKDIR</a>
+    <a href="#s2" class="nav-link">CMD Deep</a>
+    <a href="#s3" class="nav-link">EXPOSE 0.0.0.0</a>
+    <a href="#s4" class="nav-link">Port Conflict</a>
+    <a href="#s5" class="nav-link">RUN vs CMD vs EP</a>
+    <a href="#s6" class="nav-link">ADD vs COPY</a>
+    <a href="#s7" class="nav-link">dockerignore</a>
+    <a href="#s8" class="nav-link">Image Sizes</a>
+    <a href="#s9" class="nav-link">Bugs You Hit</a>
+    <a href="#s10" class="nav-link">SRE Labs</a>
+    <a href="#s11" class="nav-link">Takeaways</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">
+    <div class="hero-tag">Day 3 of 10</div>
+    <div class="hero-date">Dockerfile Mastery · Real Bugs · SRE Labs</div>
+  </div>
+  <h1>DOCKERFILE<br><span class="accent">MASTERY</span></h1>
+  <div class="hero-sub">
+    WORKDIR · CMD · ENTRYPOINT · EXPOSE · ADD vs COPY · .dockerignore · Image optimization<br>
+    Every bug you hit in lab — documented, explained, never forgotten.
+  </div>
+  <div class="hero-chips">
+    <span class="chip lime">WORKDIR</span>
+    <span class="chip green">RUN vs CMD vs EP</span>
+    <span class="chip red">0.0.0.0 Bug</span>
+    <span class="chip blue">ADD vs COPY</span>
+    <span class="chip amber">Image Sizes</span>
+    <span class="chip purple">SRE Labs</span>
+  </div>
+</div>
+<div class="divider"></div>
+<div class="sections">
+
+<!-- ═════════════════════════════════ -->
+<!-- S1: WORKDIR -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s1">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <span class="section-title">WORKDIR — WHAT, WHY & CONVENTIONS</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div style="background:rgba(170,255,0,0.05);border:1px solid rgba(170,255,0,0.28);border-left:4px solid var(--lime);padding:22px 26px;margin-bottom:22px;">
+    <div style="font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:var(--lime);margin-bottom:12px;">🧠 Core Definition</div>
+    <div style="font-family:var(--display);font-size:clamp(16px,2.5vw,24px);letter-spacing:0.05em;color:var(--white);margin-bottom:10px;">WORKDIR sets the default working directory inside the container</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.75;">It's the Linux equivalent of <code style="color:var(--lime3)">cd /app</code> — but it also creates the directory if it doesn't exist, and all subsequent COPY, RUN, and CMD instructions operate relative to it.</div>
+  </div>
+
+  <div class="two-col gap-24">
+    <div>
+      <div class="code-label">Without WORKDIR — files land in /</div>
+      <div class="code-wrap red-b gap-12">
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+<span class="cm"># No WORKDIR set</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+<br>
+<span class="cm"># Files go to: /  (root, messy!)</span>
+<span class="out">/app.py</span>
+<span class="out">/requirements.txt</span>
+<span class="err">← mixed with OS files ❌</span>
+      </div>
+
+      <div class="code-label" style="margin-top:14px;">With WORKDIR — clean, predictable</div>
+      <div class="code-wrap green-b">
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>        <span class="cm"># create + cd into /app</span>
+<span class="kw">COPY</span> <span class="val">. .</span>             <span class="cm"># → /app/app.py</span>
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+<br>
+<span class="cm"># Files go to: /app  ✅</span>
+<span class="ok">/app/app.py</span>
+<span class="ok">/app/requirements.txt</span>
+      </div>
+    </div>
+    <div>
+      <div class="code-label">Does WORKDIR change per language?</div>
+      <div style="margin-bottom:14px;">
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr><th>Language</th><th>Common WORKDIR</th><th>Valid?</th></tr></thead>
+            <tbody>
+              <tr><td class="blue">Node.js</td><td><code>/app</code></td><td class="green">✅ Most common</td></tr>
+              <tr><td class="amber">Python</td><td><code>/app</code></td><td class="green">✅ Standard</td></tr>
+              <tr><td class="red">Java</td><td><code>/app</code></td><td class="green">✅ Clean</td></tr>
+              <tr><td>Old style</td><td><code>/usr/src/app</code></td><td class="amber">✅ Valid, verbose</td></tr>
+              <tr><td>Custom</td><td><code>/myapp</code></td><td class="green">✅ Any valid path</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3 questions answered -->
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-left:2px solid var(--lime);padding:14px 18px;">
+          <div style="font-size:10px;color:var(--lime);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">Q. If I remove WORKDIR, where will files go?</div>
+          <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">Files land in <code style="color:var(--red)">/</code> (root directory). Mixed with OS files — messy and can cause conflicts.</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-left:2px solid var(--lime);padding:14px 18px;">
+          <div style="font-size:10px;color:var(--lime);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">Q. Can I use /myapp instead of /app?</div>
+          <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">Yes — any valid Linux path works. Docker creates it automatically if it doesn't exist. <code style="color:var(--green)">/app</code> is convention, not a rule.</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-left:2px solid var(--lime);padding:14px 18px;">
+          <div style="font-size:10px;color:var(--lime);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">Q. You used /usr/src/app — is that wrong?</div>
+          <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">Not wrong — older convention. Today's standard is simply <code style="color:var(--green)">/app</code>. Both work identically. Use <code>/app</code> going forward.</div>
+        </div>
+      </div>
+
+      <div class="insight" style="margin-top:14px;">
+        <div class="insight-icon">💡</div>
+        <div class="insight-body"><strong>Best practice:</strong> Use <code style="color:var(--lime3)">WORKDIR /app</code> for everything. Simple, standard, readable. The path doesn't affect runtime performance. Consistency matters more than path choice.</div>
+      </div>
+
+      <div class="ibadge">💬 "WORKDIR sets the working directory inside the container where COPY, RUN, and CMD instructions execute. It creates the path automatically if it doesn't exist."</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S2: CMD DEEP DIVE -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s2">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <span class="section-title">CMD — EXACTLY WHAT IT DOES</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div style="background:rgba(170,255,0,0.05);border:1px solid rgba(170,255,0,0.28);border-left:4px solid var(--lime);padding:22px 26px;margin-bottom:22px;">
+    <div style="font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:var(--lime);margin-bottom:10px;">🔥 Core Definition</div>
+    <div style="font-family:var(--display);font-size:clamp(16px,2.5vw,24px);letter-spacing:0.05em;color:var(--white);margin-bottom:10px;">CMD defines what command runs when the container starts</div>
+    <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">CMD = the main process = PID 1. When CMD exits, the container stops. When CMD runs forever, the container runs forever. This connects directly to Day 1's core rule.</div>
+  </div>
+
+  <div class="two-col gap-20">
+    <div>
+      <div class="code-label">The runtime flow</div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px;">
+        <div style="padding:9px 16px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--text3);font-size:11px;color:var(--text2);">1. <code style="color:var(--lime3)">docker run python-app</code></div>
+        <div style="padding:9px 16px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--text3);font-size:11px;color:var(--text2);">2. Container starts</div>
+        <div style="padding:9px 16px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--lime);font-size:11px;color:var(--lime3);">3. CMD executes → becomes PID 1</div>
+        <div style="padding:9px 16px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.28);font-size:11px;color:var(--green);">4. Process runs → container ALIVE ✅</div>
+        <div style="padding:9px 16px;background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.25);font-size:11px;color:var(--red);">5. Process exits → container STOPS ❌</div>
+      </div>
+
+      <div class="code-label">CMD for each language</div>
+      <div class="code-wrap">
+<span class="cm"># Node.js</span>
+<span class="kw">CMD</span> <span class="str">["node", "app.js"]</span>
+
+<span class="cm"># Python</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+
+<span class="cm"># Java</span>
+<span class="kw">CMD</span> <span class="str">["java", "-jar", "app.jar"]</span>
+
+<span class="cm"># Flask (production)</span>
+<span class="kw">CMD</span> <span class="str">["flask", "run", "--host=0.0.0.0"]</span>
+      </div>
+    </div>
+    <div>
+      <div class="code-label">CMD formats — exec vs shell</div>
+      <div class="code-wrap" style="margin-bottom:14px;">
+<span class="cm"># Exec form ← PREFERRED (no shell)</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+<span class="cm"># → Process is PID 1 directly ✅</span>
+<span class="cm"># → SIGTERM signals work correctly</span>
+<br>
+<span class="cm"># Shell form ← AVOID in production</span>
+<span class="kw">CMD</span> <span class="val">python app.py</span>
+<span class="cm"># → Shell is PID 1, Python is child</span>
+<span class="cm"># → SIGTERM may not reach Python ❌</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-left:2px solid var(--green);padding:14px 18px;">
+          <div style="font-size:10px;color:var(--green);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">Why CMD = PID 1 matters</div>
+          <div style="font-family:var(--sans);font-size:12px;color:var(--text2);">PID 1 receives all OS signals (SIGTERM, SIGKILL). If CMD runs in exec form, your app handles graceful shutdown correctly. Shell form adds an extra process layer.</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-left:2px solid var(--red);padding:14px 18px;">
+          <div style="font-size:10px;color:var(--red);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">CMD vs ENTRYPOINT quick rule</div>
+          <div class="tbl-wrap" style="margin-top:8px;">
+            <table class="tbl">
+              <thead><tr><th></th><th>When runs</th><th>Can override?</th></tr></thead>
+              <tbody>
+                <tr><td class="lime">CMD</td><td>Container start</td><td class="green">Yes (docker run img args)</td></tr>
+                <tr><td class="blue">ENTRYPOINT</td><td>Container start</td><td class="red">No (fixed command)</td></tr>
+                <tr><td class="amber">RUN</td><td>Build time</td><td class="teal">N/A</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S3: EXPOSE & 0.0.0.0 BUG -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s3">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <span class="section-title">EXPOSE + THE 0.0.0.0 PRODUCTION BUG</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- EXPOSE explanation -->
+  <div class="two-col gap-24">
+    <div>
+      <div class="code-label">What EXPOSE does (and doesn't do)</div>
+      <div class="two-col gap-12" style="margin-bottom:16px;">
+        <div style="background:rgba(57,217,138,0.06);border:1px solid rgba(57,217,138,0.28);padding:14px;text-align:center;">
+          <div style="font-size:9px;color:var(--green);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">EXPOSE does</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">Documents which port the container listens on internally. Visible in <code>docker inspect</code>.</div>
+        </div>
+        <div style="background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.25);padding:14px;text-align:center;">
+          <div style="font-size:9px;color:var(--red);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;">EXPOSE does NOT</div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.7;">Actually open the port. You still need <code style="color:var(--lime3)">-p 5000:5000</code> at runtime.</div>
+        </div>
+      </div>
+
+      <div class="code-wrap">
+<span class="cm"># Python Dockerfile — correct setup</span>
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="val">requirements.txt .</span>
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">--no-cache-dir</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">EXPOSE</span> <span class="val">5000</span>        <span class="cm"># document internal port</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+<br>
+<span class="cm"># Runtime — the -p actually opens it</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">5000:5000</span> <span class="tag">python-app</span>
+      </div>
+    </div>
+
+    <!-- THE BIG BUG -->
+    <div>
+      <div class="scenario" style="margin-bottom:0;">
+        <div class="scenario-title">The Bug You Hit — 127.0.0.1 vs 0.0.0.0</div>
+
+        <div style="margin-bottom:14px;">
+          <div class="code-label">What your logs showed</div>
+          <div class="code-wrap red-b" style="font-size:11px;">
+<span class="cmd">docker logs</span> <span class="val">my-prod-u</span>
+<span class="err"> * Running on http://127.0.0.1:5000</span>
+<span class="cm"># ↑ Only accessible INSIDE container</span>
+<span class="cm"># Browser on EC2 IP → ❌ refused</span>
+          </div>
+        </div>
+
+        <!-- Visual diagram -->
+        <div class="code-label">Why 127.0.0.1 fails — Container Networking</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+          <div style="background:var(--bg2);border:1px solid var(--border);padding:16px;text-align:center;">
+            <div style="font-size:9px;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:10px;">Container has its own network namespace</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="padding:12px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.3);">
+                <div class="bind-ip bad">127.0.0.1</div>
+                <div style="font-size:10px;color:var(--red);">= loopback (inside container only)</div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px;">Browser on EC2 ❌</div>
+              </div>
+              <div style="padding:12px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.3);">
+                <div class="bind-ip good">0.0.0.0</div>
+                <div style="font-size:10px;color:var(--green);">= all interfaces (any network)</div>
+                <div style="font-size:10px;color:var(--green);margin-top:4px;">Browser on EC2 ✅</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-label">The Fix — app.py</div>
+        <div class="code-wrap green-b" style="font-size:11px;">
+<span class="cm"># ❌ Wrong — only inside container</span>
+<span class="val">app.run</span>(debug=<span class="val">True</span>)
+<span class="cm"># → Flask defaults to 127.0.0.1</span>
+<br>
+<span class="cm"># ✅ Correct — all interfaces</span>
+<span class="val">app.run</span>(host=<span class="str">"0.0.0.0"</span>, port=<span class="val">5000</span>, debug=<span class="val">False</span>)
+<span class="cm"># → Docker can forward external traffic</span>
+        </div>
+
+        <div class="insight sre" style="margin-top:12px;">
+          <div class="insight-icon">🚨</div>
+          <div class="insight-body"><strong>Classic production gotcha.</strong> App running → but not reachable from browser. Debug flow: <code style="color:var(--orange3)">docker logs</code> → see 127.0.0.1 → fix bind address → rebuild → done. Also remove <code>debug=True</code> in production — it's a security risk.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Common mistakes table -->
+  <div class="tbl-wrap" style="margin-top:16px;">
+    <table class="tbl">
+      <thead><tr><th>Mistake</th><th>Symptom</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td><code class="err">app.run(debug=True)</code> (no host)</td><td class="red">Browser cannot reach app</td><td class="green">Add <code>host="0.0.0.0"</code></td></tr>
+        <tr><td>Missing <code>-p</code> flag</td><td class="red">Connection refused</td><td class="green">Use <code>docker run -p 5000:5000</code></td></tr>
+        <tr><td>EC2 Security Group</td><td class="red">Port open in container but blocked</td><td class="amber">Add inbound rule for port in AWS SG</td></tr>
+        <tr><td>App binding <code>127.0.0.1</code></td><td class="red">Works inside exec, fails from browser</td><td class="green">Bind to <code>0.0.0.0</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S4: PORT CONFLICT -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s4">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <span class="section-title">PORT CONFLICT — port already allocated</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="two-col gap-20">
+    <div>
+      <div class="code-label">Error you hit</div>
+      <div class="code-wrap red-b gap-16">
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">5000:5000</span> <span class="flag">--name</span> <span class="val">my-prod-u-1</span> <span class="tag">my-u:v2</span>
+<br>
+<span class="err">Error response from daemon: driver failed programming</span>
+<span class="err">external connectivity on endpoint my-prod-u-1:</span>
+<span class="err">Bind for 0.0.0.0:5000 failed: port is already allocated.</span>
+      </div>
+
+      <div class="insight sre" style="margin-top:12px;">
+        <div class="insight-icon">🧠</div>
+        <div class="insight-body"><strong>Root cause:</strong> Only ONE container (or process) can own a host port at a time. Your first container <code>my-prod-u</code> was still running on port 5000. Two containers cannot both listen on the same host port.</div>
+      </div>
+
+      <div class="code-label" style="margin-top:14px;">3 Solutions</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="border:1px solid var(--border);border-left:2px solid var(--green);padding:14px 18px;">
+          <div style="font-size:10px;color:var(--green);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">✅ Option 1 — Stop old container (Best)</div>
+          <div class="code-wrap green-b" style="font-size:11px;padding:10px 14px;">
+<span class="cmd">docker stop</span> <span class="val">my-prod-u</span>
+<span class="cmd">docker rm</span> <span class="val">my-prod-u</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">5000:5000</span> <span class="tag">my-u:v2</span>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-left:2px solid var(--amber);padding:14px 18px;">
+          <div style="font-size:10px;color:var(--amber);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">⚡ Option 2 — Use different host port</div>
+          <div class="code-wrap amber-b" style="font-size:11px;padding:10px 14px;">
+<span class="cm"># Run on host port 5001 instead</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">5001:5000</span> <span class="flag">--name</span> <span class="val">my-prod-u-1</span> <span class="tag">my-u:v2</span>
+<span class="cm"># Access: http://EC2-IP:5001</span>
+          </div>
+        </div>
+        <div style="border:1px solid var(--border);border-left:2px solid var(--blue);padding:14px 18px;">
+          <div style="font-size:10px;color:var(--blue);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">🔍 Option 3 — Find what's using the port</div>
+          <div class="code-wrap blue-b" style="font-size:11px;padding:10px 14px;">
+<span class="cmd">netstat</span> <span class="flag">-tulnp</span> | <span class="cmd">grep</span> <span class="val">5000</span>
+<span class="cm"># or</span>
+<span class="cmd">lsof</span> <span class="flag">-i</span> <span class="val">:5000</span>
+<span class="cm"># Then kill the PID</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="code-label">SRE Mental Model — Port Conflict Debugging</div>
+      <div style="background:var(--card);border:1px solid var(--border);padding:22px;margin-bottom:14px;">
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Run docker ps</div>
+              <div class="step-desc">Find running containers and their port mappings</div>
+              <div class="step-code">docker ps</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Identify port owner</div>
+              <div class="step-desc">Which container is using port 5000? Or is it a host process?</div>
+              <div class="step-code">netstat -tulnp | grep 5000</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Stop or remap</div>
+              <div class="step-desc">Stop the old container or use a different host port</div>
+              <div class="step-code">docker stop &lt;name&gt; && docker rm &lt;name&gt;</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Re-run</div>
+              <div class="step-desc">Port is now free, run new container</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Scenario</th><th>SRE Thinking</th></tr></thead>
+          <tbody>
+            <tr><td>Port conflict</td><td class="amber">Port busy? Container or host process?</td></tr>
+            <tr><td>Container not starting</td><td class="blue">Check docker logs first</td></tr>
+            <tr><td>Old + new version</td><td class="green">Use different host port for testing</td></tr>
+            <tr><td>Disk full</td><td class="red">docker system prune + rm dangling images</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ibadge" style="margin-top:12px;">💬 "Port already allocated means the host port is in use by another container or process. I identify the owner with netstat/lsof, then stop it or remap to a free port."</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S5: RUN vs CMD vs ENTRYPOINT -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s5">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <span class="section-title">RUN vs CMD vs ENTRYPOINT — 3 Dockerfiles</span>
+    <div class="section-line"></div>
+  </div>
+
+  <!-- The golden rule -->
+  <div style="background:rgba(170,255,0,0.05);border:1px solid rgba(170,255,0,0.28);border-left:4px solid var(--lime);padding:20px 24px;margin-bottom:22px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+      <div style="text-align:center;padding:14px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.25);">
+        <div style="font-family:var(--display);font-size:22px;color:var(--red);letter-spacing:0.06em;">RUN</div>
+        <div style="font-size:11px;color:var(--red);margin-top:4px;">Build time</div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);margin-top:8px;">Executes during docker build. Creates image layers. Install, compile, setup.</div>
+      </div>
+      <div style="text-align:center;padding:14px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.28);">
+        <div style="font-family:var(--display);font-size:22px;color:var(--green);letter-spacing:0.06em;">CMD</div>
+        <div style="font-size:11px;color:var(--green);margin-top:4px;">Runtime (default)</div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);margin-top:8px;">Runs when container starts. Can be overridden by args in docker run.</div>
+      </div>
+      <div style="text-align:center;padding:14px;background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.28);">
+        <div style="font-family:var(--display);font-size:22px;color:var(--blue);letter-spacing:0.06em;">ENTRYPOINT</div>
+        <div style="font-size:11px;color:var(--blue);margin-top:4px;">Runtime (fixed)</div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);margin-top:8px;">Runs when container starts. Cannot be overridden. Always executes.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 Dockerfiles -->
+  <div class="three-col gap-20">
+
+    <!-- RUN -->
+    <div>
+      <div class="card-label red">❌ Dockerfile 1 — Using RUN (WRONG)</div>
+      <div class="code-wrap red-b gap-12">
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="err">RUN python app.py    ← WRONG</span>
+      </div>
+      <div class="scenario" style="margin-top:10px;">
+        <div class="scenario-title">What actually happened</div>
+        <div class="code-wrap red-b" style="font-size:10px;padding:10px 12px;margin-bottom:8px;">
+<span class="out">[7/7] RUN python app.py    17.1s</span>
+<span class="out"> * Running on all addresses (0.0.0.0)</span>
+<span class="out"> * Running on http://127.0.0.1:5000</span>
+<span class="cm"># Build stalled — server started during BUILD!</span>
+        </div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);line-height:1.7;">
+          Flask started running during <code>docker build</code>. Build gets stuck because the server never exits. Build = wrong. This is the exact bug you experienced live.
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.2);font-size:10px;color:var(--red);letter-spacing:0.1em;">Container: exits immediately after build</div>
+    </div>
+
+    <!-- CMD -->
+    <div>
+      <div class="card-label green">✅ Dockerfile 2 — Using CMD (CORRECT)</div>
+      <div class="code-wrap green-b gap-12">
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+<span class="ok">CMD ["python", "app.py"]  ← CORRECT</span>
+      </div>
+      <div style="margin-top:10px;background:var(--card);border:1px solid var(--border);padding:14px;">
+        <div class="code-label">Behaviour</div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:8px;">Build completes successfully. CMD only executes when <code>docker run</code> is called. Container starts and keeps running as long as Flask is alive.</div>
+        <div class="code-wrap green-b" style="font-size:10px;padding:8px 12px;">
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">5000:5000</span> <span class="tag">test-cmd</span>
+<span class="ok"># ✅ Flask starts at runtime</span>
+<span class="cm"># Override example:</span>
+<span class="cmd">docker run</span> <span class="tag">test-cmd</span> <span class="val">echo "hello"</span>
+<span class="out">hello  ← CMD was replaced</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.2);font-size:10px;color:var(--green);letter-spacing:0.1em;">Container: stays alive ✅</div>
+    </div>
+
+    <!-- ENTRYPOINT -->
+    <div>
+      <div class="card-label blue">🔒 Dockerfile 3 — ENTRYPOINT (Fixed)</div>
+      <div class="code-wrap blue-b gap-12">
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+<span class="tag">ENTRYPOINT ["python", "app.py"]</span>
+      </div>
+      <div style="margin-top:10px;background:var(--card);border:1px solid var(--border);padding:14px;">
+        <div class="code-label">Behaviour</div>
+        <div style="font-family:var(--sans);font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:8px;">Always runs python — cannot be replaced by docker run args. Useful for tools and CLIs where the command must always be the same.</div>
+        <div class="code-wrap blue-b" style="font-size:10px;padding:8px 12px;">
+<span class="cmd">docker run</span> <span class="tag">test-entry</span> <span class="val">echo "hello"</span>
+<span class="out"># ❌ "echo hello" does NOT replace python</span>
+<span class="out"># It becomes an ARGUMENT to python</span>
+<span class="out"># → python echo "hello" (likely error)</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;padding:8px 12px;background:rgba(74,158,255,0.07);border:1px solid rgba(74,158,255,0.2);font-size:10px;color:var(--blue);letter-spacing:0.1em;">Container: always runs python, stays alive</div>
+    </div>
+
+  </div>
+
+  <!-- Full comparison table -->
+  <div class="tbl-wrap" style="margin-top:16px;">
+    <table class="tbl">
+      <thead><tr><th>Instruction</th><th>When runs</th><th>Purpose</th><th>Overridable</th><th>Real use case</th></tr></thead>
+      <tbody>
+        <tr><td class="red">RUN</td><td class="red">docker build</td><td>Install, compile, setup</td><td class="teal">N/A</td><td>pip install, apt-get, mvn package</td></tr>
+        <tr><td class="green">CMD</td><td class="green">docker run (container start)</td><td>Default app startup</td><td class="green">Yes — docker run img args</td><td>node app.js, python app.py</td></tr>
+        <tr><td class="blue">ENTRYPOINT</td><td class="blue">docker run (container start)</td><td>Fixed command</td><td class="red">No — args are appended</td><td>CLI tools, scripts with fixed entry</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight sre" style="margin-top:14px;">
+    <div class="insight-icon">🔥</div>
+    <div class="insight-body"><strong>The bug you hit explained:</strong> You wrote <code>RUN python app.py</code> in your Dockerfile. During <code>docker build</code>, Docker executed this — Flask started running, the server never returned control to Docker, and the build either hung for 17 seconds or failed. <strong>RUN is for build-time. CMD is for runtime.</strong> This is the #1 most common Docker mistake.</div>
+  </div>
+
+  <div class="ibadge" style="margin-top:12px;">💬 "RUN executes during build to create layers. CMD defines the default command at runtime and can be overridden. ENTRYPOINT sets a fixed command that always runs."</div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S6: ADD vs COPY -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s6">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <span class="section-title">ADD vs COPY — When to Use Each</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="two-col gap-20">
+    <div>
+      <div class="tbl-wrap gap-16">
+        <table class="tbl">
+          <thead><tr><th>Feature</th><th>COPY</th><th>ADD</th></tr></thead>
+          <tbody>
+            <tr><td>Copy files/dirs</td><td class="green">✅</td><td class="green">✅</td></tr>
+            <tr><td>Auto-extract .tar.gz</td><td class="red">❌ No</td><td class="green">✅ Yes!</td></tr>
+            <tr><td>Download from URL</td><td class="red">❌ No</td><td class="green">✅ Yes</td></tr>
+            <tr><td>Recommended for?</td><td class="lime">Files & directories (always)</td><td class="amber">Only when tar extraction needed</td></tr>
+            <tr><td>Predictability</td><td class="green">Simple, explicit</td><td class="amber">Extra magic can surprise you</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="insight" style="margin-top:12px;">
+        <div class="insight-icon">📋</div>
+        <div class="insight-body"><strong>Best practice rule:</strong> Always use COPY. Only switch to ADD when you specifically need tar extraction. ADD's "magic" (auto-extract, URL download) can cause unexpected behavior in production.</div>
+      </div>
+
+      <div class="ibadge">💬 "Use COPY for most cases. ADD is only needed when automatically extracting tar archives."</div>
+    </div>
+    <div>
+      <div class="code-label">COPY — explicit, predictable</div>
+      <div class="code-wrap green-b gap-12">
+<span class="cm"># Copies file exactly as-is</span>
+<span class="kw">COPY</span> <span class="val">app.py /app/app.py</span>
+<span class="kw">COPY</span> <span class="val">requirements.txt .</span>
+<span class="kw">COPY</span> <span class="val">. .</span>                  <span class="cm"># copy all</span>
+
+<span class="cm"># Result: file in destination ✅</span>
+<span class="cm"># No surprises</span>
+      </div>
+
+      <div class="code-label" style="margin-top:14px;">ADD — auto-extract tar</div>
+      <div class="code-wrap amber-b gap-12">
+<span class="cm"># Create tar file first</span>
+<span class="cmd">tar</span> <span class="flag">-cvf</span> <span class="val">test.tar app.py</span>
+
+<span class="cm"># ADD auto-extracts it</span>
+<span class="kw">FROM</span> <span class="val">alpine</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">ADD</span> <span class="val">test.tar .</span>        <span class="cm"># ← extracts automatically</span>
+
+<span class="cm"># Inside container:</span>
+<span class="ok">/app/app.py            ← extracted ✅</span>
+<span class="cm"># (not /app/test.tar)</span>
+
+<span class="cm"># ADD from URL (use sparingly)</span>
+<span class="kw">ADD</span> <span class="val">https://example.com/file.tar.gz /app/</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S7: .dockerignore -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s7">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <span class="section-title">.dockerignore — Speed & Security</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="two-col gap-20">
+    <div>
+      <div style="background:rgba(170,255,0,0.05);border:1px solid rgba(170,255,0,0.28);border-left:4px solid var(--lime);padding:20px 24px;margin-bottom:16px;">
+        <div style="font-size:9px;letter-spacing:0.28em;text-transform:uppercase;color:var(--lime);margin-bottom:10px;">What is .dockerignore?</div>
+        <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.75;">Like <code style="color:var(--lime3)">.gitignore</code> but for Docker. It tells Docker what NOT to include in the build context sent to the daemon. Placed in the same directory as your Dockerfile.</div>
+      </div>
+
+      <div class="code-label">Your .dockerignore file</div>
+      <div class="code-wrap">
+<span class="cm"># Dependencies (regenerated inside image)</span>
+<span class="val">node_modules</span>
+<span class="val">__pycache__</span>
+<span class="val">*.pyc</span>
+
+<span class="cm"># Version control</span>
+<span class="val">.git</span>
+<span class="val">.gitignore</span>
+
+<span class="cm"># Secrets — CRITICAL</span>
+<span class="val">.env</span>
+<span class="val">*.key</span>
+<span class="val">*.pem</span>
+
+<span class="cm"># Dev files</span>
+<span class="val">Dockerfile*</span>
+<span class="val">README.md</span>
+<span class="val">*.log</span>
+      </div>
+    </div>
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div style="background:rgba(255,71,87,0.06);border:1px solid rgba(255,71,87,0.25);padding:16px;text-align:center;">
+          <div style="font-family:var(--display);font-size:28px;color:var(--red);margin-bottom:6px;">Without</div>
+          <div style="font-size:11px;color:var(--text2);">Sends entire folder to daemon<br>node_modules (100MB+)<br>.git history<br>.env secrets<br>→ Slow build, large context</div>
+        </div>
+        <div style="background:rgba(170,255,0,0.06);border:1px solid rgba(170,255,0,0.28);padding:16px;text-align:center;">
+          <div style="font-family:var(--display);font-size:28px;color:var(--lime);margin-bottom:6px;">With</div>
+          <div style="font-size:11px;color:var(--text2);">Only source files sent<br>No giant node_modules<br>No secrets exposed<br>→ Fast build, secure</div>
+        </div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>What to Ignore</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><code>node_modules</code></td><td class="green">Regenerated by npm install inside container</td></tr>
+            <tr><td><code>.git</code></td><td class="green">History not needed in image</td></tr>
+            <tr><td><code>.env</code></td><td class="red">🚨 SECRETS — never bake into image</td></tr>
+            <tr><td><code>*.log</code></td><td class="amber">Dev logs, useless in prod</td></tr>
+            <tr><td><code>__pycache__</code></td><td class="green">Python cache, regenerated automatically</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="insight sre" style="margin-top:12px;">
+        <div class="insight-icon">🔐</div>
+        <div class="insight-body"><strong>Critical security rule:</strong> Never put <code>.env</code> files or API keys in Docker images. Use Docker secrets or environment variables at runtime. Images are inspectable — anyone with your image can read baked-in secrets.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S8: IMAGE SIZE COMPARISON -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s8">
+  <div class="section-header">
+    <span class="section-num">08</span>
+    <span class="section-title">PYTHON IMAGE SIZE COMPARISON</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="two-col gap-20">
+    <div>
+      <div class="code-label">Build 3 versions and compare</div>
+      <div class="code-wrap gap-16">
+<span class="cm"># Version 1 — Full (heaviest)</span>
+<span class="kw">FROM</span> <span class="val">python:3.11</span>
+
+<span class="cm"># Version 2 — Slim (recommended)</span>
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+
+<span class="cm"># Version 3 — Alpine (smallest)</span>
+<span class="kw">FROM</span> <span class="val">python:3.11-alpine</span>
+<br>
+<span class="cm"># Check sizes:</span>
+<span class="cmd">docker images</span>
+      </div>
+
+      <div class="code-label" style="margin-top:14px;">Expected docker images output</div>
+      <div style="background:var(--card);border:1px solid var(--border);padding:20px;">
+        <div class="size-row">
+          <div class="size-label" style="color:var(--red);">python:3.11</div>
+          <div class="size-track"><div class="size-fill sz-full" style="width:100%;">~300MB</div></div>
+        </div>
+        <div class="size-row">
+          <div class="size-label" style="color:var(--amber);">python:3.11-slim</div>
+          <div class="size-track"><div class="size-fill sz-slim" style="width:34%;">~100MB</div></div>
+        </div>
+        <div class="size-row">
+          <div class="size-label" style="color:var(--lime);">python:3.11-alpine</div>
+          <div class="size-track"><div class="size-fill sz-alpine" style="width:17%;">~50MB</div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="three-col" style="grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+        <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--red);padding:16px;text-align:center;">
+          <div style="font-family:var(--display);font-size:22px;color:var(--red);margin-bottom:6px;">Full</div>
+          <div style="font-size:22px;font-weight:700;color:var(--red);margin-bottom:8px;">~300MB</div>
+          <ul class="blist" style="text-align:left;font-size:10px;">
+            <li>Full Debian OS</li>
+            <li>All Python tools</li>
+            <li>gcc, build-essential</li>
+          </ul>
+          <div style="margin-top:10px;font-size:10px;color:var(--red);">❌ Never in production</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--amber);padding:16px;text-align:center;">
+          <div style="font-family:var(--display);font-size:22px;color:var(--amber);margin-bottom:6px;">Slim</div>
+          <div style="font-size:22px;font-weight:700;color:var(--amber);margin-bottom:8px;">~100MB</div>
+          <ul class="blist amber-dot" style="text-align:left;font-size:10px;">
+            <li>Minimal Debian</li>
+            <li>Python runtime</li>
+            <li>glibc ✅</li>
+          </ul>
+          <div style="margin-top:10px;font-size:10px;color:var(--amber);">✅ Recommended</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-top:2px solid var(--lime);padding:16px;text-align:center;">
+          <div style="font-family:var(--display);font-size:22px;color:var(--lime);margin-bottom:6px;">Alpine</div>
+          <div style="font-size:22px;font-weight:700;color:var(--lime);margin-bottom:8px;">~50MB</div>
+          <ul class="blist" style="text-align:left;font-size:10px;">
+            <li>BusyBox Linux</li>
+            <li>musl libc</li>
+            <li>Minimal tools</li>
+          </ul>
+          <div style="margin-top:10px;font-size:10px;color:var(--amber);">⚠️ Test compatibility</div>
+        </div>
+      </div>
+
+      <div class="insight amber" style="margin-bottom:12px;">
+        <div class="insight-icon">⚠️</div>
+        <div class="insight-body"><strong>Important: You were using python:3 (no tag)</strong> — that resolves to the full Python image (~300MB+). Always pin to <code style="color:var(--lime3)">python:3.11-slim</code> in production for size + security.</div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>Tag</th><th>When to use</th></tr></thead>
+          <tbody>
+            <tr><td class="red">python:3.11</td><td>Never in production. Only if you need gcc/compilers.</td></tr>
+            <tr><td class="amber">python:3.11-slim</td><td class="green">✅ Default choice. Small, glibc-compatible.</td></tr>
+            <tr><td class="lime">python:3.11-alpine</td><td class="amber">If you need minimal size AND confirmed musl compat.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S9: BUGS YOU HIT IN LAB -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s9">
+  <div class="section-header">
+    <span class="section-num">09</span>
+    <span class="section-title">BUGS YOU HIT — DOCUMENTED FOREVER</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Bug 1 -->
+    <div class="scenario">
+      <div class="scenario-title">Bug 1 — pip install requirements.txt (missing -r)</div>
+      <div class="two-col">
+        <div>
+          <div class="code-label">Error you got</div>
+          <div class="code-wrap red-b" style="font-size:11px;margin-bottom:10px;">
+<span class="kw">RUN</span> <span class="err">pip install requirements.txt</span>
+<br>
+<span class="err">ERROR: Could not find a version that satisfies</span>
+<span class="err">the requirement requirements.txt</span>
+<span class="err">HINT: You are attempting to install a package</span>
+<span class="err">literally named "requirements.txt"</span>
+          </div>
+        </div>
+        <div>
+          <div class="code-label">Root cause & fix</div>
+          <div style="font-family:var(--sans);font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">pip treated <code style="color:var(--red)">requirements.txt</code> as a <strong>package name</strong> to install, not a file to read from. The <code style="color:var(--lime3)">-r</code> flag means "read FROM file".</div>
+          <div class="tbl-wrap">
+            <table class="tbl" style="font-size:11px;">
+              <thead><tr><th>Command</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td class="red"><code>pip install flask</code></td><td>Install package named flask ✅</td></tr>
+                <tr><td class="red"><code>pip install requirements.txt</code></td><td class="red">Install package named "requirements.txt" ❌</td></tr>
+                <tr><td class="green"><code>pip install -r requirements.txt</code></td><td class="green">Read file, install all packages inside ✅</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="code-wrap green-b" style="font-size:11px;margin-top:10px;padding:10px 14px;">
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">--no-cache-dir</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bug 2 -->
+    <div class="scenario amber">
+      <div class="scenario-title">Bug 2 — RUN python app.py (build hangs)</div>
+      <div class="two-col">
+        <div>
+          <div class="code-label">Build output you saw</div>
+          <div class="code-wrap amber-b" style="font-size:11px;margin-bottom:10px;">
+<span class="out">[7/7] RUN python app.py              17.1s</span>
+<span class="out"> * Running on all addresses (0.0.0.0)</span>
+<span class="out"> * Running on http://127.0.0.1:5000</span>
+<span class="out"> * Running on http://172.17.0.5:5000</span>
+<span class="out"> Press CTRL+C to quit</span>
+<span class="cm"># Build stalled — server started during BUILD ❌</span>
+          </div>
+        </div>
+        <div>
+          <div class="code-label">What was happening</div>
+          <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:10px;">
+            Docker ran <code style="color:var(--amber)">RUN python app.py</code> during <strong>build time</strong>. Flask started a web server. The server ran and never returned — build hung for 17 seconds until Docker gave up. The image was never created correctly.
+          </div>
+          <div class="code-wrap green-b" style="font-size:11px;padding:10px 14px;">
+<span class="cm"># ❌ Wrong — runs at BUILD time</span>
+<span class="err">RUN python app.py</span>
+<br>
+<span class="cm"># ✅ Correct — runs at RUNTIME</span>
+<span class="ok">CMD ["python", "app.py"]</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bug 3 -->
+    <div class="scenario lime">
+      <div class="scenario-title" style="color:var(--lime);">Bug 3 — 127.0.0.1 binding (not accessible from browser)</div>
+      <div class="two-col">
+        <div>
+          <div class="code-label">Symptom</div>
+          <div style="font-family:var(--sans);font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.7;">Container running, port mapped, EC2 Security Group open — but browser shows "Connection refused". <code>docker logs</code> revealed the issue.</div>
+          <div class="code-wrap red-b" style="font-size:11px;padding:10px 14px;margin-bottom:10px;">
+<span class="cmd">docker logs</span> <span class="val">my-prod-u</span>
+<span class="err"> * Running on http://127.0.0.1:5000</span>
+<span class="cm"># ↑ localhost only — browser can't reach this</span>
+          </div>
+        </div>
+        <div>
+          <div class="code-label">Fix in app.py</div>
+          <div class="code-wrap green-b" style="font-size:11px;padding:10px 14px;margin-bottom:10px;">
+<span class="cm"># ❌ Before</span>
+<span class="val">app.run</span>(debug=<span class="val">True</span>)
+
+<span class="cm"># ✅ After</span>
+<span class="val">app.run</span>(host=<span class="str">"0.0.0.0"</span>, port=<span class="val">5000</span>, debug=<span class="val">False</span>)
+          </div>
+          <div class="code-wrap green-b" style="font-size:11px;padding:10px 14px;">
+<span class="cm"># Rebuild with new version tag</span>
+<span class="cmd">docker build</span> <span class="flag">-t</span> <span class="val">my-u:v3</span> <span class="val">.</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">5000:5000</span> <span class="tag">my-u:v3</span>
+<span class="ok"> * Running on http://0.0.0.0:5000  ← ✅</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bug 4 -->
+    <div class="scenario">
+      <div class="scenario-title">Bug 4 — Port already allocated</div>
+      <div class="two-col">
+        <div>
+          <div class="code-label">Error</div>
+          <div class="code-wrap red-b" style="font-size:11px;padding:10px 14px;margin-bottom:10px;">
+<span class="err">Bind for 0.0.0.0:5000 failed:</span>
+<span class="err">port is already allocated.</span>
+          </div>
+          <div style="font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">You tried to run a new container on port 5000 while another container was already using it. Host ports are exclusive — only one process at a time.</div>
+        </div>
+        <div>
+          <div class="code-label">How you solved it</div>
+          <div class="code-wrap green-b" style="font-size:11px;padding:10px 14px;">
+<span class="cm"># Used different host port</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">5001:5000</span> <span class="flag">--name</span> <span class="val">my-prod-u-2</span> <span class="tag">my-u:v2</span>
+<span class="cm"># → Access at http://EC2-IP:5001</span>
+<span class="cm"># Both containers run simultaneously ✅</span>
+          </div>
+          <div style="margin-top:10px;font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.7;">This is also how load balancing works — multiple containers on different host ports, load balancer distributes traffic.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Cache validation -->
+  <div style="margin-top:16px;background:var(--card);border:1px solid var(--border);border-top:2px solid var(--lime);padding:24px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--lime);margin-bottom:16px;">✅ What You Observed Correctly — Layer Caching Validation</div>
+    <div class="two-col">
+      <div>
+        <div class="code-label">Build output you saw (v4 build)</div>
+        <div class="code-wrap" style="font-size:11px;">
+<span class="cm"># After modifying only app.py:</span>
+<span class="out">[2/5] WORKDIR /usr/src/app</span>
+<span class="ok">           → CACHED ✅</span>
+<span class="out">[3/5] COPY requirements.txt .</span>
+<span class="ok">           → CACHED ✅</span>
+<span class="out">[4/5] RUN pip install --upgrade pip</span>
+<span class="ok">           → CACHED ✅</span>
+<span class="out">[5/5] COPY . .   </span>
+<span class="err">           → REBUILT ❌ (code changed)</span>
+        </div>
+      </div>
+      <div>
+        <div class="cache-step">
+          <div class="cache-num">1</div>
+          <div class="cache-block cached">FROM python:3.11-slim <span class="cache-badge">✅ CACHED</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">2</div>
+          <div class="cache-block cached">COPY requirements.txt . <span class="cache-badge">✅ CACHED — unchanged</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">3</div>
+          <div class="cache-block cached">RUN pip install... <span class="cache-badge">✅ CACHED — no reinstall!</span></div>
+        </div>
+        <div class="cache-step">
+          <div class="cache-num">4</div>
+          <div class="cache-block rebuild">COPY . . <span class="cache-badge">🔄 REBUILT — app.py changed</span></div>
+        </div>
+        <div style="margin-top:10px;padding:8px 12px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);font-size:11px;color:var(--green);">⚡ Build: ~5 seconds (no pip install)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S10: SRE LAB CHALLENGES -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s10">
+  <div class="section-header">
+    <span class="section-num">10</span>
+    <span class="section-title">SRE LAB CHALLENGES</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Challenge 1: Wrong WORKDIR -->
+    <div class="card lime">
+      <div class="card-label lime">🔴 SRE Challenge 1 — Break Dockerfile with Wrong WORKDIR</div>
+      <div class="two-col">
+        <div>
+          <div class="code-label">Broken Dockerfile</div>
+          <div class="code-wrap red-b" style="font-size:11px;">
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+<span class="kw">WORKDIR</span> <span class="err">/wrong/path</span>
+<span class="kw">COPY</span> <span class="val">. .</span>        <span class="cm"># → /wrong/path/app.py</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+          </div>
+          <div class="code-label" style="margin-top:12px;">What happens when you run it</div>
+          <div class="code-wrap red-b" style="font-size:11px;">
+<span class="cmd">docker build</span> <span class="flag">-t</span> <span class="val">broken</span> <span class="val">.</span>
+<span class="cm"># Build SUCCEEDS (WORKDIR is created)</span>
+<br>
+<span class="cmd">docker run</span> <span class="tag">broken</span>
+<span class="err">python: can't open file '/wrong/path/app.py'</span>
+<span class="err">No such file or directory</span>
+          </div>
+        </div>
+        <div>
+          <div class="code-label">Debug flow</div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <div class="step-title">Check container status</div>
+                <div class="step-code">docker ps -a</div>
+                <div class="step-desc">Status: Exited (2) — file not found error</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <div class="step-title">Read logs</div>
+                <div class="step-code">docker logs &lt;id&gt;</div>
+                <div class="step-desc">See "No such file or directory" error</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <div class="step-title">Exec inside to verify</div>
+                <div class="step-code">docker run -it broken sh</div>
+                <div class="step-desc">Navigate — files are at /wrong/path/ not /app/</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-body">
+                <div class="step-title">Fix WORKDIR</div>
+                <div class="step-code">WORKDIR /app</div>
+                <div class="step-desc">Rebuild → works correctly</div>
+              </div>
+            </div>
+          </div>
+          <div class="insight" style="margin-top:10px;">
+            <div class="insight-icon">🧠</div>
+            <div class="insight-body"><strong>Key learning:</strong> WORKDIR creates the directory automatically (no build error). The error only appears at RUNTIME when CMD tries to find files in the wrong location.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenge 2: HEALTHCHECK -->
+    <div class="card green">
+      <div class="card-label green">🟢 SRE Challenge 2 — HEALTHCHECK</div>
+      <div class="two-col">
+        <div>
+          <div class="code-label">Add HEALTHCHECK to Dockerfile</div>
+          <div class="code-wrap green-b" style="font-size:11px;">
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>
+<span class="kw">WORKDIR</span> <span class="val">/app</span>
+<span class="kw">COPY</span> <span class="val">requirements.txt .</span>
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">--no-cache-dir</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+<span class="kw">EXPOSE</span> <span class="val">5000</span>
+<br>
+<span class="cm"># Health check every 30s</span>
+<span class="kw">HEALTHCHECK</span> <span class="flag">--interval</span>=<span class="val">30s</span> <span class="flag">--timeout</span>=<span class="val">10s</span> \
+  <span class="kw">CMD</span> <span class="cmd">curl</span> <span class="flag">--fail</span> <span class="val">http://localhost:5000</span> || exit 1
+<br>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+          </div>
+        </div>
+        <div>
+          <div class="code-label">Build, run and verify</div>
+          <div class="code-wrap green-b" style="font-size:11px;margin-bottom:12px;">
+<span class="cmd">docker build</span> <span class="flag">-t</span> <span class="val">health-app</span> <span class="val">.</span>
+<span class="cmd">docker run</span> <span class="flag">-d</span> <span class="flag">-p</span> <span class="val">5000:5000</span> <span class="tag">health-app</span>
+<br>
+<span class="cm"># Check health status</span>
+<span class="cmd">docker inspect</span> <span class="val">&lt;container&gt;</span>
+
+<span class="cm"># Look for in JSON output:</span>
+<span class="out">"Health": {</span>
+<span class="out">  "Status": "healthy",</span>
+<span class="out">  "FailingStreak": 0,</span>
+<span class="out">  "Log": [</span>
+<span class="out">    {</span>
+<span class="out">      "ExitCode": 0,</span>
+<span class="ok">      "Output": "HTTP/1.1 200 OK"</span>
+<span class="out">    }</span>
+<span class="out">  ]</span>
+<span class="out">}</span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="padding:12px;background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);text-align:center;">
+              <div style="font-family:var(--display);font-size:18px;color:var(--green);">healthy</div>
+              <div style="font-size:10px;color:var(--text2);margin-top:4px;">curl returns 200 OK</div>
+            </div>
+            <div style="padding:12px;background:rgba(255,184,48,0.07);border:1px solid rgba(255,184,48,0.25);text-align:center;">
+              <div style="font-family:var(--display);font-size:18px;color:var(--amber);">starting</div>
+              <div style="font-size:10px;color:var(--text2);margin-top:4px;">First 30s, not checked yet</div>
+            </div>
+            <div style="padding:12px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.25);text-align:center;">
+              <div style="font-family:var(--display);font-size:18px;color:var(--red);">unhealthy</div>
+              <div style="font-size:10px;color:var(--text2);margin-top:4px;">curl failed 3+ times</div>
+            </div>
+            <div style="padding:12px;background:var(--bg2);border:1px solid var(--border);text-align:center;">
+              <div style="font-family:var(--display);font-size:18px;color:var(--text2);">none</div>
+              <div style="font-size:10px;color:var(--text2);margin-top:4px;">No HEALTHCHECK defined</div>
+            </div>
+          </div>
+
+          <div class="insight green" style="margin-top:12px;">
+            <div class="insight-icon">⚡</div>
+            <div class="insight-body"><strong>Why HEALTHCHECK matters in production:</strong> Kubernetes and Docker Swarm use health status to decide if a container can receive traffic. An unhealthy container gets replaced automatically. Without it, a crashed-but-running container gets traffic.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Challenge 3: Optimal Dockerfile -->
+    <div class="card blue">
+      <div class="card-label blue">🔵 Final Lab — Your Optimized Python Dockerfile</div>
+      <div class="code-wrap green-b">
+<span class="cm"># ─────── Production-Ready Python Dockerfile ───────</span>
+<span class="kw">FROM</span> <span class="val">python:3.11-slim</span>       <span class="cm"># slim, not full</span>
+
+<span class="kw">WORKDIR</span> <span class="val">/app</span>                  <span class="cm"># clean /app dir</span>
+
+<span class="cm"># Dep file first — enable caching</span>
+<span class="kw">COPY</span> <span class="val">requirements.txt .</span>
+
+<span class="cm"># Install — single RUN chained for fewer layers</span>
+<span class="kw">RUN</span> <span class="cmd">pip install</span> <span class="flag">--upgrade</span> <span class="val">pip</span> \
+    && <span class="cmd">pip install</span> <span class="flag">--no-cache-dir</span> <span class="flag">-r</span> <span class="val">requirements.txt</span>
+
+<span class="cm"># App code last — changes most often</span>
+<span class="kw">COPY</span> <span class="val">. .</span>
+
+<span class="kw">EXPOSE</span> <span class="val">5000</span>
+
+<span class="cm"># Health check</span>
+<span class="kw">HEALTHCHECK</span> <span class="flag">--interval</span>=<span class="val">30s</span> <span class="flag">--timeout</span>=<span class="val">10s</span> \
+  <span class="kw">CMD</span> <span class="cmd">curl</span> <span class="flag">-f</span> <span class="val">http://localhost:5000</span> || exit 1
+
+<span class="cm"># Runtime only — NOT build time</span>
+<span class="kw">CMD</span> <span class="str">["python", "app.py"]</span>
+<br>
+<span class="cm"># .dockerignore also created:</span>
+<span class="out">__pycache__  .git  .env  *.log  *.pyc</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═════════════════════════════════ -->
+<!-- S11: TAKEAWAYS -->
+<!-- ═════════════════════════════════ -->
+<div class="section" id="s11">
+  <div class="section-header">
+    <span class="section-num">11</span>
+    <span class="section-title">FINAL SRE TAKEAWAYS — DAY 3</span>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="tgrid gap-24">
+    <div class="tcard">
+      <span class="tcard-icon">📁</span>
+      <div class="tcard-title">WORKDIR = Your App's Home</div>
+      <div class="tcard-body">Use <code>/app</code> always. Language doesn't matter. Docker creates it automatically. All COPY, RUN, CMD execute relative to it. Without it, files land in / (root — messy).</div>
+    </div>
+    <div class="tcard">
+      <span class="tcard-icon">⚡</span>
+      <div class="tcard-title">CMD = Runtime, RUN = Build</div>
+      <div class="tcard-body">RUN installs and compiles during build. CMD starts your app when container runs. Mix them up = app tries to start during docker build. Most common Dockerfile mistake.</div>
+    </div>
+    <div class="tcard">
+      <span class="tcard-icon">🌐</span>
+      <div class="tcard-title">Always Bind 0.0.0.0</div>
+      <div class="tcard-body">127.0.0.1 = loopback = container-only. 0.0.0.0 = all interfaces = externally reachable. Flask defaults to 127.0.0.1. Always override: <code>host="0.0.0.0"</code>.</div>
+    </div>
+    <div class="tcard">
+      <span class="tcard-icon">📋</span>
+      <div class="tcard-title">COPY over ADD</div>
+      <div class="tcard-body">Use COPY for everything. ADD only when you need tar auto-extraction. ADD's "magic" (URL fetch, extract) creates unpredictable builds. Explicit beats magic in prod.</div>
+    </div>
+    <div class="tcard">
+      <span class="tcard-icon">🚀</span>
+      <div class="tcard-title">pip install -r not pip install</div>
+      <div class="tcard-body">-r means "read FROM file". Without -r, pip tries to install a package literally named "requirements.txt" — fails instantly. pip install -r requirements.txt is the only correct form.</div>
+    </div>
+    <div class="tcard">
+      <span class="tcard-icon">🔒</span>
+      <div class="tcard-title">.dockerignore = Security</div>
+      <div class="tcard-body">.env files, .git, node_modules must never reach the image. .env in Docker image = your secrets in the registry = major security breach. Always dockerignore.</div>
+    </div>
+  </div>
+
+  <!-- Interview Q&A -->
+  <div style="background:var(--card);border:1px solid rgba(155,127,244,0.35);border-left:4px solid var(--purple);padding:26px;margin-top:24px;">
+    <div style="font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--purple);margin-bottom:20px;">🏆 Interview-Ready Answers — Day 3</div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:8px;">Q. "What is WORKDIR and does it change per language?"</div>
+        <div style="padding:12px 16px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">WORKDIR sets the working directory inside the container where subsequent commands execute. I use <code>/app</code> as convention regardless of language — Node, Python, Java all work the same. Docker creates the path automatically if it doesn't exist.</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:8px;">Q. "Difference between RUN, CMD, and ENTRYPOINT?"</div>
+        <div style="padding:12px 16px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">RUN executes during docker build to create image layers (installs, compilations). CMD defines the default command at container start and can be overridden with docker run args. ENTRYPOINT is like CMD but cannot be overridden — it always runs, making it ideal for CLI tools.</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--white);margin-bottom:8px;">Q. "Why was the container running but not accessible?"</div>
+        <div style="padding:12px 16px;background:rgba(155,127,244,0.06);border:1px solid rgba(155,127,244,0.15);font-family:var(--sans);font-size:12px;color:var(--text2);line-height:1.8;">The Flask app was bound to 127.0.0.1 (loopback), which is only accessible inside the container's network namespace. Changing to 0.0.0.0 makes it listen on all interfaces, allowing Docker's port forwarding to work. Also checked EC2 Security Group to ensure the port was open externally.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Completion -->
+  <div style="margin-top:22px;background:linear-gradient(135deg,rgba(170,255,0,0.06),rgba(57,217,138,0.04));border:1px solid rgba(170,255,0,0.3);padding:28px;text-align:center;">
+    <div style="font-size:32px;margin-bottom:8px;">🏁</div>
+    <div style="font-family:var(--display);font-size:28px;letter-spacing:0.06em;color:var(--white);margin-bottom:8px;">DAY 3 — COMPLETE</div>
+    <div style="font-family:var(--sans);font-size:13px;color:var(--text2);line-height:1.7;max-width:580px;margin:0 auto;">You mastered WORKDIR, CMD runtime vs RUN buildtime, fixed the 0.0.0.0 binding bug, resolved port conflicts, explored RUN/CMD/ENTRYPOINT with 3 live Dockerfiles, and built a production-grade Python Dockerfile with HEALTHCHECK. Day 4 is Volumes — where real data persistence and production DB scenarios start.</div>
+    <div style="margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <span class="chip lime">✅ WORKDIR</span>
+      <span class="chip green">✅ CMD vs RUN vs EP</span>
+      <span class="chip red">✅ 0.0.0.0 Bug Fixed</span>
+      <span class="chip blue">✅ ADD vs COPY</span>
+      <span class="chip amber">✅ dockerignore</span>
+      <span class="chip purple">✅ HEALTHCHECK</span>
+      <span class="chip lime">✅ Image Sizes</span>
+      <span class="chip green">✅ Port Conflicts</span>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /sections -->
+</div><!-- /page -->
+
+<script>
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.07, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.section').forEach(s => obs.observe(s));
+
+const sections = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+const navObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.style.color = '');
+      const a = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+      if (a) a.style.color = 'var(--lime)';
+    }
+  });
+}, { threshold: 0.4 });
+sections.forEach(s => navObs.observe(s));
+</script>
+</body>
+</html>
