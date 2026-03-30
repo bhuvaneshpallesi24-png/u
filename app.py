@@ -24,6 +24,8 @@ def home():
     return render_template("layout.html", sections=SECTIONS)
 
 @app.route("/view/<section>/<subsection>")
+
+# editing the code to check wether the cahges are reflecting or not 
 def view(section, subsection):
     file_name = SECTIONS.get(section, {}).get(subsection)
     return render_template("viewer.html", file=file_name, sections=SECTIONS)
