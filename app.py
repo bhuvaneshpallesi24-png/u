@@ -2,7 +2,7 @@ from flask import Flask, render_template
 
 app = Flask(__name__)
 
-# 🔥 CONFIG - YOU CAN MODIFY THIS ANYTIME  - Ramesh -bhu
+# 🔥 CONFIG - YOU CAN MODIFY THIS ANYTIME  - Ramesh -bhu - luvly
 SECTIONS = {
     "Docker": {
         "Day 4 Revision": "docker-day4-revision.html",
